@@ -1,0 +1,94 @@
+"""
+api/main.py
+FastAPI backend for FarmPlan v2 (Tier 2 Grounded RAG Assistant).
+All operations are 100% free of cost, locally run, with strict safety validations.
+"""
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+
+from rag.retrieve import retriever
+from rag.generate import generate_grounded_answer
+from rag.validate import numbers_supported
+
+app = FastAPI(title="FarmPlan API", version="2.0.0")
+
+# Enable CORS for local development and web frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+FALLBACK_MESSAGES = {
+    "en": "I do not have a verified answer for this in official Punjab guidance. Please contact your local Agriculture Officer or KVK specialist.",
+    "pa": "ਸਰਕਾਰੀ ਖੇਤੀਬਾੜੀ ਸਿਫ਼ਾਰਸ਼ਾਂ ਵਿੱਚ ਇਸ ਸਵਾਲ ਦਾ ਕੋਈ ਪ੍ਰਮਾਣਿਤ ਜਵਾਬ ਨਹੀਂ ਮਿਲਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੇ ਸਥਾਨਕ ਖੇਤੀਬਾੜੀ ਅਫ਼ਸਰ ਜਾਂ KVK ਮਾਹਰ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।",
+    "hi": "सरकारी कृषि सिफारिशों में इस प्रश्न का कोई प्रमाणित उत्तर नहीं मिला। कृपया अपने स्थानीय कृषि अधिकारी या KVK विशेषज्ञ से संपर्क करें।",
+}
+
+class AskRequest(BaseModel):
+    question: str = Field(..., max_length=500, description="Farmer's query")
+    lang: str = Field("en", description="Language code: pa, hi, or en")
+    district: str | None = Field(None, description="Optional district code")
+
+@app.get("/health")
+def health():
+    return {"ok": True, "status": "healthy"}
+
+@app.post("/ask")
+def ask(req: AskRequest):
+    if len(req.question.strip()) == 0:
+        raise HTTPException(status_code=400, detail="Empty question")
+
+    # 1. Retrieve official passages
+    passages = retriever.retrieve(req.question, k=3, min_score=0.08)
+
+    if not passages:
+        return {
+            "grounded": False,
+            "answer": FALLBACK_MESSAGES.get(req.lang, FALLBACK_MESSAGES["en"]),
+            "sources": [],
+            "reason": "no_relevant_passages"
+        }
+
+    # 2. Generate answer
+    raw_answer = generate_grounded_answer(req.question, passages, lang=req.lang)
+
+    if raw_answer.strip() == "NO_ANSWER":
+        return {
+            "grounded": False,
+            "answer": FALLBACK_MESSAGES.get(req.lang, FALLBACK_MESSAGES["en"]),
+            "sources": [],
+            "reason": "refusal_by_model"
+        }
+
+    # 3. Defensive Number Validator (Safety Net)
+    is_valid, unsupported_numbers = numbers_supported(raw_answer, passages)
+    if not is_valid:
+        print(f"SECURITY ALERT: Blocked hallucinated numbers {unsupported_numbers} in generated answer.")
+        return {
+            "grounded": False,
+            "answer": FALLBACK_MESSAGES.get(req.lang, FALLBACK_MESSAGES["en"]),
+            "sources": [],
+            "reason": "unsupported_number_detected",
+            "flagged_numbers": list(unsupported_numbers)
+        }
+
+    # 4. Success: return grounded answer and source citations
+    sources = [
+        {"title": p["title"], "page": p["page"], "section": p["section"]}
+        for p in passages
+    ]
+
+    return {
+        "grounded": True,
+        "answer": raw_answer,
+        "sources": sources
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

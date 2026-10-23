@@ -453,6 +453,13 @@ async function init() {
   setupAudioPlayer();
   setupCostCalculator();
   setupChat();
+
+  // Register service worker for offline PWA
+  if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("./sw.js").catch((err) => {
+      console.warn("Service worker registration failed:", err);
+    });
+  }
 }
 
 window.addEventListener("DOMContentLoaded", init);

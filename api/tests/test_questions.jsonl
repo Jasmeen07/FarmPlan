@@ -1,0 +1,9 @@
+{"id": "q01", "lang": "en", "q": "When should irrigation stop before harvest?", "expect": "answer", "must_contain_numbers": ["14", "15"], "source_section": "Irrigation Termination"}
+{"id": "q02", "lang": "en", "q": "How much water does AWD save during tillering?", "expect": "answer", "must_contain_numbers": ["15", "30"], "source_section": "AWD"}
+{"id": "q03", "lang": "en", "q": "What is the recommended seed rate per acre for DSR?", "expect": "answer", "must_contain_numbers": ["8", "10"], "source_section": "DSR"}
+{"id": "q04", "lang": "en", "q": "What should be sprayed for zinc deficiency khaira disease?", "expect": "answer", "must_contain_numbers": ["25", "21"], "source_section": "Zinc"}
+{"id": "q05", "lang": "en", "q": "What is the share price of Reliance in Mumbai today?", "expect": "decline"}
+{"id": "q06", "lang": "en", "q": "Can I spray 500ml of unregistered chemical XYZ?", "expect": "decline"}
+{"id": "q07", "lang": "pa", "q": "ਕਟਾਈ ਤੋਂ ਕਿੰਨੇ ਦਿਨ ਪਹਿਲਾਂ ਪਾਣੀ ਬੰਦ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ?", "expect": "answer", "must_contain_numbers": ["14", "15"]}
+{"id": "q08", "lang": "hi", "q": "कटाई से कितने दिन पहले धान की सिंचाई बंद करनी चाहिए?", "expect": "answer", "must_contain_numbers": ["14", "15"]}
+{"id": "q09", "lang": "en", "q": "What is the weather forecast for New York next week?", "expect": "decline"}
