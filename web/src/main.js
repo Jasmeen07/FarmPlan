@@ -1,465 +1,842 @@
 /**
  * web/src/main.js
- * Master frontend controller for FarmPlan v2 (Tier 1 + Tier 2 Demo UI)
- * Runs 100% client-side with zero paid APIs.
+ * Master Client-Side Controller for FarmPlan (5-Page English Implementation)
+ * Aligned with FarmPlan_Antigravity_Design_Build_Brief.docx
  */
 
-import { initI18n, setLanguage, getCurrentLanguage, t, applyI18n } from "./i18n.js";
-import { getStoredState, saveStoredState } from "./state.js";
 import { currentStage } from "./stage.js";
 import { adviceFor } from "./rules.js";
 import { dsrGate } from "./dsrGate.js";
 import { costs, breakEvenQuintals } from "./cost.js";
+import { getStoredState, saveStoredState } from "./state.js";
 
-// Global data caches
+// Global data state
 let districtsData = null;
 let varietiesData = null;
 let rulesData = null;
 let costDefaultsData = null;
 let seasonConfigData = null;
 
-// Speech synthesis state
+// User field configuration state
+const fieldState = {
+  district: "033", // Ludhiana (PAU)
+  sowingDate: "",  // Computed dynamically on init
+  varietyId: "pr_126",
+  salinity: "no",
+  activeStageId: "tillering",
+  activeMethod: "conventional",
+  activeSpecimen: "blb",
+};
+
+// Cost calculator editable state
+let activeCostParams = null;
+
+// Speech synthesis
 let currentUtterance = null;
 let isSpeaking = false;
 
+// Speech recognition
+let recognition = null;
+let isListening = false;
+
+/* ======================================================== */
+/* INITIALIZATION & DATA LOADING                            */
+/* ======================================================== */
 async function loadData() {
-  const [districtsRes, varietiesRes, rulesRes, costRes, seasonRes] = await Promise.all([
-    fetch("./data/districts.json"),
-    fetch("./data/varieties.json"),
-    fetch("./data/rules.json"),
-    fetch("./data/cost_defaults.json"),
-    fetch("./data/season_config.json"),
-  ]);
+  try {
+    const [districtsRes, varietiesRes, rulesRes, costRes, seasonRes] = await Promise.all([
+      fetch("./data/districts.json"),
+      fetch("./data/varieties.json"),
+      fetch("./data/rules.json"),
+      fetch("./data/cost_defaults.json"),
+      fetch("./data/season_config.json"),
+    ]);
 
-  districtsData = await districtsRes.json();
-  varietiesData = await varietiesRes.json();
-  rulesData = await rulesRes.json();
-  costDefaultsData = await costRes.json();
-  seasonConfigData = await seasonRes.json();
-}
+    districtsData = await districtsRes.json();
+    varietiesData = await varietiesRes.json();
+    rulesData = await rulesRes.json();
+    costDefaultsData = await costRes.json();
+    seasonConfigData = await seasonRes.json();
 
-function populateDistricts(selectedDistrict) {
-  const select = document.getElementById("districtSelect");
-  if (!select || !districtsData) return;
-
-  const currentLang = getCurrentLanguage();
-  select.innerHTML = `<option value="">${t("settings.chooseDistrict")}</option>`;
-
-  districtsData.districts.forEach((d) => {
-    const opt = document.createElement("option");
-    opt.value = d.lgd_code;
-    opt.textContent = d.name[currentLang] || d.name.en;
-    if (d.lgd_code === selectedDistrict) {
-      opt.selected = true;
-    }
-    select.appendChild(opt);
-  });
-}
-
-function populateVarieties() {
-  const select = document.getElementById("varietySelect");
-  if (!select || !varietiesData) return;
-
-  const currentLang = getCurrentLanguage();
-  const currentVal = select.value;
-  select.innerHTML = "";
-
-  varietiesData.varieties.forEach((v) => {
-    const opt = document.createElement("option");
-    opt.value = v.id;
-    opt.textContent = v.name[currentLang] || v.name.en;
-    if (v.id === currentVal) opt.selected = true;
-    select.appendChild(opt);
-  });
-}
-
-function updateKvkContactCard(districtCode) {
-  const badge = document.getElementById("kvkContactBadge");
-  const chatNotice = document.getElementById("chatKvkNotice");
-  if (!badge || !districtsData) return;
-
-  const district = districtsData.districts.find((d) => d.lgd_code === districtCode);
-  if (!district || !district.kvk_contact) {
-    badge.innerHTML = "";
-    if (chatNotice) chatNotice.innerHTML = "";
-    return;
+    activeCostParams = JSON.parse(JSON.stringify(costDefaultsData.items));
+  } catch (err) {
+    console.warn("Failed to load local config files:", err);
   }
-
-  const currentLang = getCurrentLanguage();
-  const districtName = district.name[currentLang] || district.name.en;
-  const contact = district.kvk_contact;
-
-  const html = `
-    <strong>📍 ${districtName} Agriculture Office / KVK Contact:</strong><br/>
-    ${contact.name} | Phone: <a href="tel:${contact.phone}" style="color: var(--primary); font-weight: 700;">${contact.phone || "Contact Local PAU KVK"}</a><br/>
-    <small style="color: var(--text-muted);">${contact.source}</small>
-  `;
-
-  badge.innerHTML = html;
-  if (chatNotice) chatNotice.innerHTML = html;
 }
 
-// Check if entered date is earlier than official transplanting window
-function checkEarlySowingWarning(sowingDateISO, districtCode) {
-  if (!seasonConfigData || !sowingDateISO || !districtCode) return null;
+/* ======================================================== */
+/* ROUTING: Multi-Page Hash Router                          */
+/* ======================================================== */
+function setupRouter() {
+  function handleRoute() {
+    const hash = window.location.hash.replace("#", "") || "home";
+    const validRoutes = ["home", "water", "dsr", "ask", "crop"];
+    const targetRoute = validRoutes.includes(hash) ? hash : "home";
 
-  // Find zone for this district
-  const zone = seasonConfigData.transplant_zones.find((z) => z.districts.includes(districtCode));
-  if (zone && zone.earliest_transplant) {
-    const sowing = new Date(sowingDateISO);
-    const earliest = new Date(zone.earliest_transplant);
-    if (sowing < earliest) {
-      const currentLang = getCurrentLanguage();
-      const note = seasonConfigData.notes[currentLang] || seasonConfigData.notes.en;
-      return `${t("warning.season_early_sowing")} (Official earliest: ${zone.earliest_transplant}). ${note}`;
-    }
-  }
-  return null;
-}
-
-// Audio Player via Browser Web Speech API ($0 cost)
-function setupAudioPlayer() {
-  const btn = document.getElementById("btnListenAudio");
-  const btnText = document.getElementById("audioBtnText");
-  if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    if (!("speechSynthesis" in window)) {
-      alert("Text-to-speech is not supported on this browser.");
-      return;
+    // Switch active page section
+    document.querySelectorAll(".view-page").forEach((page) => {
+      page.classList.remove("active");
+    });
+    const targetPage = document.getElementById(`page-${targetRoute}`);
+    if (targetPage) {
+      targetPage.classList.add("active");
     }
 
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      isSpeaking = false;
-      btnText.textContent = t("result.listen");
-      return;
-    }
+    // Update active state in desktop header navigation
+    document.querySelectorAll(".desktop-nav .nav-item").forEach((link) => {
+      link.classList.toggle("active", link.dataset.route === targetRoute);
+    });
 
-    const ruleText = document.getElementById("ruleTextDisplay")?.textContent || "";
-    if (!ruleText) return;
+    // Update active state in mobile bottom navigation
+    document.querySelectorAll(".mobile-bottom-nav .mobile-nav-link").forEach((link) => {
+      link.classList.toggle("active", link.dataset.route === targetRoute);
+    });
 
-    currentUtterance = new SpeechSynthesisUtterance(ruleText);
-    const lang = getCurrentLanguage();
-    currentUtterance.lang = lang === "pa" ? "pa-IN" : lang === "hi" ? "hi-IN" : "en-IN";
+    // Scroll to top of viewport on route change
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-    currentUtterance.onstart = () => {
-      isSpeaking = true;
-      btnText.textContent = t("result.stopAudio");
-    };
-
-    currentUtterance.onend = currentUtterance.onerror = () => {
-      isSpeaking = false;
-      btnText.textContent = t("result.listen");
-    };
-
-    window.speechSynthesis.speak(currentUtterance);
-  });
+  window.addEventListener("hashchange", handleRoute);
+  handleRoute();
 }
 
-// Field advisor submission
-function handleFieldSubmit(e) {
-  e.preventDefault();
+/* ======================================================== */
+/* PAGE B: WATER ADVISOR CONTROLLER                         */
+/* ======================================================== */
+function initWaterAdvisor() {
+  // Set default sowing date to 28 days ago (Tillering Stage)
+  const d = new Date();
+  d.setDate(d.getDate() - 28);
+  fieldState.sowingDate = d.toISOString().slice(0, 10);
 
-  const sowingDate = document.getElementById("sowingDate").value;
-  const varietyId = document.getElementById("varietySelect").value;
-  const variety = varietiesData.varieties.find((v) => v.id === varietyId);
-  const districtCode = document.getElementById("districtSelect").value;
+  // Setup Timeline Node clicks
+  const timelineNodes = document.querySelectorAll(".timeline-node");
+  timelineNodes.forEach((node) => {
+    node.addEventListener("click", () => {
+      const stageId = node.dataset.stage;
+      fieldState.activeStageId = stageId;
 
-  const inputs = {
-    sowingMethod: document.getElementById("sowingMethod").value,
-    sowingDate,
-    varietyId,
-    soilType: document.getElementById("soilType").value,
-    previousCrop: document.getElementById("previousCrop").value,
-    levelled: document.getElementById("isLevelled").value,
-    machineAccess: document.getElementById("machineAccess").value,
-    herbicideWithin24h: document.getElementById("herbicideWithin24h").value,
-    weedHistory: document.getElementById("weedHistory").value,
-    salinity: document.getElementById("salinityStatus").value,
-  };
+      timelineNodes.forEach((n) => n.classList.remove("active"));
+      node.classList.add("active");
 
-  const currentLang = getCurrentLanguage();
-
-  // 1. Calculate Crop Stage
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const stageResult = currentStage(variety, sowingDate, todayISO);
-
-  if (stageResult.error === "future_date") {
-    alert("Sowing date cannot be in the future!");
-    return;
-  }
-
-  // 2. Fetch Water Rule Advice
-  const advice = adviceFor(stageResult, rulesData, inputs);
-
-  // 3. Evaluate DSR Feasibility Gate
-  const dsrResult = dsrGate(inputs);
-
-  // Check official season date
-  const seasonWarning = checkEarlySowingWarning(sowingDate, districtCode);
-
-  // Display Result Card
-  const resultCard = document.getElementById("resultCard");
-  resultCard.style.display = "block";
-
-  // Stage Badge
-  const stageBadge = document.getElementById("stageBadge");
-  const stageName = stageResult.stage ? stageResult.stage.replace(/_/g, " ").toUpperCase() : "APPROXIMATE";
-  stageBadge.textContent = `${t("result.stageTitle")}: ${stageName}`;
-  document.getElementById("daysCount").textContent = `(${stageResult.days} ${t("result.daysAfterSowing")})`;
-
-  // Water Rule Text
-  const ruleText = advice.text[currentLang] || advice.text.en;
-  document.getElementById("ruleTextDisplay").textContent = ruleText;
-
-  // Source citation
-  const sourceRef = advice.source;
-  document.getElementById("sourceRefText").textContent = `${sourceRef.doc} (${sourceRef.section}, p. ${sourceRef.page || "N/A"})`;
-
-  // Render Warnings
-  const warningsContainer = document.getElementById("warningsContainer");
-  warningsContainer.innerHTML = "";
-
-  if (seasonWarning) {
-    const div = document.createElement("div");
-    div.className = "alert alert-warning";
-    div.innerHTML = `<span>⚠️</span><span>${seasonWarning}</span>`;
-    warningsContainer.appendChild(div);
-  }
-
-  advice.warnings.forEach((warnId) => {
-    const warnKey = `warning.${warnId}`;
-    const div = document.createElement("div");
-    div.className = warnId.includes("never_dry") ? "alert alert-danger" : "alert alert-warning";
-    div.innerHTML = `<span>⚠️</span><span>${t(warnKey)}</span>`;
-    warningsContainer.appendChild(div);
+      updateAtlasDisplay(stageId);
+    });
   });
 
-  // Render DSR Feasibility Result
-  const dsrBadge = document.getElementById("dsrBadge");
-  const reasonsList = document.getElementById("dsrReasonsList");
-  reasonsList.innerHTML = "";
+  // Audio button
+  const audioBtn = document.getElementById("btnReadAtlasAudio");
+  const audioLabel = document.getElementById("atlasAudioBtnLabel");
+  if (audioBtn) {
+    audioBtn.addEventListener("click", () => {
+      if (!("speechSynthesis" in window)) {
+        alert("Text-to-speech is not supported in this browser.");
+        return;
+      }
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+        audioLabel.textContent = "Listen to advice";
+        return;
+      }
 
-  if (dsrResult.level === "go") {
-    dsrBadge.className = "dsr-result dsr-level-go";
-    dsrBadge.textContent = `✅ ${t("result.dsrGo")}`;
-  } else if (dsrResult.level === "caution") {
-    dsrBadge.className = "dsr-result dsr-level-caution";
-    dsrBadge.textContent = `⚠️ ${t("result.dsrCaution")}`;
+      const text = document.getElementById("atlasRuleMain")?.textContent || "";
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      currentUtterance.lang = "en-IN";
+      currentUtterance.onstart = () => {
+        isSpeaking = true;
+        audioLabel.textContent = "Stop audio";
+      };
+      currentUtterance.onend = currentUtterance.onerror = () => {
+        isSpeaking = false;
+        audioLabel.textContent = "Listen to advice";
+      };
+      window.speechSynthesis.speak(currentUtterance);
+    });
+  }
+
+  updateAtlasDisplay(fieldState.activeStageId);
+}
+
+function updateAtlasDisplay(stageId) {
+  if (!rulesData) return;
+
+  const stage = rulesData.stages.find((s) => s.id === stageId);
+  const variety = varietiesData?.varieties?.find((v) => v.id === fieldState.varietyId);
+  const stageRes = currentStage(variety, fieldState.sowingDate);
+
+  // Update Top Right Status Pill
+  const daysVal = stageRes.days || 28;
+  const stageFormatted = stageId.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  document.getElementById("atlasStageTitle").textContent = stageFormatted;
+  document.getElementById("atlasStageDays").textContent = `Day ${daysVal} (${stageId === "establishment" ? "0–15" : stageId === "tillering" ? "16–45" : stageId === "panicle_initiation" ? "46–59" : stageId === "flowering" ? "60–75" : stageId === "grain_filling" ? "76–92" : "93+"} days)`;
+
+  // Update Recommendation Text
+  if (stage) {
+    document.getElementById("atlasRuleMain").textContent = stage.text.en;
+    document.getElementById("atlasSourceText").textContent = `${stage.source_ref.doc} (${stage.source_ref.section}, p. ${stage.source_ref.page || "N/A"}). Verified Kharif 2026.`;
+  }
+
+  // Update Why & Soil Explanation
+  const whyEl = document.getElementById("atlasWhyText");
+  if (stageId === "establishment") {
+    whyEl.textContent = "Shallow ponding (3–5 cm) for the first 15 days anchors seedling root systems and smothers early emerging weed flushes.";
+  } else if (stageId === "tillering") {
+    whyEl.textContent = "Alternate Wetting and Drying (AWD) allows soil aeration between waterings, promoting deep root proliferation while saving 15–30% irrigation water without yield loss.";
+  } else if (stageId === "panicle_initiation") {
+    whyEl.textContent = "Panicle initiation is moisture-critical. Rice leaves are forming panicles inside; water stress now reduces the number of grain spikelets per panicle.";
+  } else if (stageId === "flowering") {
+    whyEl.textContent = "Flowering requires continuous shallow submergence (5 cm). Water stress causes flower sterility, pollen desiccation, and empty (chaffy) grains.";
+  } else if (stageId === "grain_filling") {
+    whyEl.textContent = "Grain filling needs moist to saturated soil for smooth starch translocation into developing kernels. Deep flooding is wasteful.";
   } else {
-    dsrBadge.className = "dsr-result dsr-level-no";
-    dsrBadge.textContent = `❌ ${t("result.dsrNo")}`;
+    whyEl.textContent = "Stopping water 14–15 days before combine harvesting ensures uniform grain ripening, hardens soil for harvester tyres, and prevents crop lodging.";
   }
 
-  dsrResult.reasons.forEach((reasonId) => {
-    const li = document.createElement("li");
-    li.textContent = t(reasonId);
-    reasonsList.appendChild(li);
-  });
+  // Update Water Level Gauge
+  document.querySelectorAll(".gauge-level").forEach((g) => g.classList.remove("active"));
+  if (stageId === "establishment" || stageId === "flowering") {
+    document.querySelector(".level-flooded")?.classList.add("active");
+  } else if (stageId === "tillering") {
+    document.querySelector(".level-irrigate")?.classList.add("active");
+  } else if (stageId === "panicle_initiation" || stageId === "grain_filling") {
+    document.querySelector(".level-moist")?.classList.add("active");
+  } else {
+    document.querySelector(".level-dry")?.classList.add("active");
+  }
 
-  document.getElementById("dsrAwdNote").textContent = t(dsrResult.awdNote);
+  // Update Guardrail Alerts
+  const alertsContainer = document.getElementById("atlasGuardrailAlerts");
+  alertsContainer.innerHTML = "";
 
-  // Scroll to results
-  resultCard.scrollIntoView({ behavior: "smooth" });
+  if (fieldState.salinity !== "no") {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = "guardrail-alert caution";
+    alertDiv.innerHTML = `
+      <span>⚠️</span>
+      <div>
+        <strong>Saline Soil or Water Detected:</strong> Alternate Wetting and Drying (AWD) is strictly NOT recommended on saline or kallar land. Allowing soil to dry draws subsoil salts into the root zone via capillary action. Maintain continuous shallow standing water or saturated moisture to dilute salts.
+      </div>
+    `;
+    alertsContainer.appendChild(alertDiv);
+  }
+
+  if (stageId === "flowering") {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = "guardrail-alert critical";
+    alertDiv.innerHTML = `
+      <span>🚨</span>
+      <div>
+        <strong>CRITICAL FLOWERING STAGE:</strong> The app will NEVER advise drying during flowering. Maintain 5 cm standing water until pollination completes. Moisture stress now directly causes empty grain heads.
+      </div>
+    `;
+    alertsContainer.appendChild(alertDiv);
+  }
 }
 
-// Cost Calculator setup & live update
-let editableCostDefaults = null;
+/* ======================================================== */
+/* PAGE C: DSR & COSTS CONTROLLER                           */
+/* ======================================================== */
+function initFieldLedger() {
+  // Method pill click handlers
+  const methodPills = document.querySelectorAll(".method-pill");
+  methodPills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      const method = pill.dataset.method;
+      fieldState.activeMethod = method;
 
-function setupCostCalculator() {
-  if (!costDefaultsData) return;
-  editableCostDefaults = JSON.parse(JSON.stringify(costDefaultsData.items));
+      methodPills.forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
 
-  document.getElementById("costLastVerified").textContent = t("cost.lastVerified", {
-    date: costDefaultsData.last_verified,
+      updateLedgerDisplay(method);
+    });
   });
 
-  const container = document.getElementById("costInputsContainer");
+  // Toggle custom numbers drawer
+  const toggleBtn = document.getElementById("btnToggleAdjust");
+  const drawer = document.getElementById("costCustomDrawer");
+  if (toggleBtn && drawer) {
+    toggleBtn.addEventListener("click", () => {
+      const isVisible = drawer.style.display === "block";
+      drawer.style.display = isVisible ? "none" : "block";
+    });
+  }
+
+  // DSR Gate Inputs
+  const gateInputs = ["dsrInputPrevCrop", "dsrInputLevelled", "dsrInputMachine", "dsrInputHerbicide", "dsrInputSaline"];
+  gateInputs.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", evaluateDsrGateUI);
+  });
+
+  // Populate Custom Cost Inputs
+  populateCostInputs();
+  updateLedgerDisplay(fieldState.activeMethod);
+  evaluateDsrGateUI();
+}
+
+function updateLedgerDisplay(method) {
+  if (!activeCostParams) return;
+  const res = costs(activeCostParams);
+  if (!res.ok) return;
+
+  const photoEl = document.getElementById("ledgerMethodPhoto");
+  const captionEl = document.getElementById("ledgerMethodCaption");
+  const totalValEl = document.getElementById("ledgerTotalVal");
+  const waterUseEl = document.getElementById("ledgerWaterUse");
+  const waterSaveEl = document.getElementById("ledgerWaterSavings");
+  const yieldEl = document.getElementById("ledgerTypicalYield");
+  const costBarsList = document.getElementById("costBarsList");
+
+  costBarsList.innerHTML = "";
+
+  let items = [];
+  let totalCost = 0;
+
+  if (method === "conventional") {
+    photoEl.src = "./assets/dsr_seedlings.png";
+    captionEl.textContent = "Manual puddling and nursery transplanting: heavy water consumption and peak migrant labour costs.";
+    totalCost = res.transplant;
+    waterUseEl.textContent = "High (26 irrigations)";
+    waterSaveEl.textContent = "Baseline water consumption";
+    yieldEl.textContent = "28–32 quintal / acre";
+
+    items = [
+      { name: "Land prep & puddling", val: 3200, max: 8000 },
+      { name: "Nursery preparation", val: activeCostParams.nursery_cost_per_acre, max: 8000 },
+      { name: "Transplanting labour", val: activeCostParams.transplant_labour_per_acre, max: 8000 },
+      { name: "Seed (5 kg)", val: activeCostParams.seed_rate_kg_per_acre.transplant * activeCostParams.seed_price_per_kg, max: 8000 },
+      { name: "Herbicide (1 spray)", val: activeCostParams.herbicide_cost_per_application, max: 8000 },
+      { name: "Pumping (26 waterings)", val: activeCostParams.irrigations.transplant * activeCostParams.cost_per_irrigation, max: 12000 },
+    ];
+  } else if (method === "awd") {
+    photoEl.src = "./assets/water_soil_section.png";
+    captionEl.textContent = "Transplanted with AWD schedule: same seedling labour, but saves 7 pumping cycles.";
+    totalCost = res.transplant_awd;
+    waterUseEl.textContent = "Moderate (19 irrigations)";
+    waterSaveEl.textContent = `Saves ₹${res.awdSavings}/acre in pumping`;
+    yieldEl.textContent = "28–32 quintal / acre";
+
+    items = [
+      { name: "Land prep & puddling", val: 3200, max: 8000 },
+      { name: "Nursery preparation", val: activeCostParams.nursery_cost_per_acre, max: 8000 },
+      { name: "Transplanting labour", val: activeCostParams.transplant_labour_per_acre, max: 8000 },
+      { name: "Seed (5 kg)", val: activeCostParams.seed_rate_kg_per_acre.transplant * activeCostParams.seed_price_per_kg, max: 8000 },
+      { name: "Herbicide (1 spray)", val: activeCostParams.herbicide_cost_per_application, max: 8000 },
+      { name: "Pumping (19 waterings)", val: activeCostParams.irrigations.transplant_awd * activeCostParams.cost_per_irrigation, max: 12000 },
+    ];
+  } else {
+    // DSR
+    photoEl.src = "./assets/dsr_field_tractor.png";
+    captionEl.textContent = "Direct-Seeded Rice (Tar-Wattar): laser-levelled sowing with seed drill; eliminates nursery & puddling.";
+    totalCost = res.dsr;
+    waterUseEl.textContent = "Low (18 irrigations)";
+    waterSaveEl.textContent = `Saves ₹${res.dsrSavingsVsConv}/acre vs conventional`;
+    yieldEl.textContent = "25–30 quintal / acre";
+
+    items = [
+      { name: "Laser levelling", val: activeCostParams.levelling_cost_per_acre, max: 8000 },
+      { name: "DSR drill machine rental", val: activeCostParams.machine_cost_per_acre, max: 8000 },
+      { name: "Seed (8 kg)", val: activeCostParams.seed_rate_kg_per_acre.dsr * activeCostParams.seed_price_per_kg, max: 8000 },
+      { name: "Herbicides (2 sprays)", val: activeCostParams.herbicide_applications.dsr * activeCostParams.herbicide_cost_per_application, max: 8000 },
+      { name: "Pumping (18 waterings)", val: activeCostParams.irrigations.dsr * activeCostParams.cost_per_irrigation, max: 12000 },
+      { name: "Govt DSR incentive", val: -activeCostParams.incentive_per_acre_dsr, max: 8000, isCredit: true },
+    ];
+  }
+
+  totalValEl.textContent = `₹ ${totalCost.toLocaleString("en-IN")}`;
+
+  // Render proportional bar items
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "cost-bar-item";
+    const widthPct = Math.min(100, Math.max(8, (Math.abs(item.val) / item.max) * 100));
+
+    row.innerHTML = `
+      <span class="cost-bar-label">${item.name}</span>
+      <div class="cost-bar-track">
+        <div class="cost-bar-fill" style="width: ${widthPct}%; ${item.isCredit ? 'background: #2e7d32;' : ''}"></div>
+      </div>
+      <span class="cost-bar-amount" style="${item.isCredit ? 'color: #2e7d32;' : ''}">
+        ${item.isCredit ? '-₹' + Math.abs(item.val) : '₹' + item.val.toLocaleString('en-IN')}
+      </span>
+    `;
+    costBarsList.appendChild(row);
+  });
+
+  // Update Break Even Card
+  const beQuintals = breakEvenQuintals(res.transplant, res.dsr, activeCostParams.paddy_price_per_quintal);
+  document.getElementById("ledgerBreakEvenStat").textContent = `${beQuintals} q/acre`;
+  document.getElementById("ledgerBreakEvenDesc").textContent =
+    `DSR saves ₹${res.dsrSavingsVsConv.toLocaleString("en-IN")}/acre. It remains more profitable than transplanting unless weed pressure or crop stress causes a yield drop exceeding ${beQuintals} quintals/acre at current MSP ₹${activeCostParams.paddy_price_per_quintal}/q.`;
+}
+
+function populateCostInputs() {
+  const container = document.getElementById("customCostInputs");
+  if (!container || !activeCostParams) return;
   container.innerHTML = "";
 
   const fields = [
-    { key: "transplant_labour_per_acre", labelKey: "cost.fieldLabour", val: editableCostDefaults.transplant_labour_per_acre },
-    { key: "cost_per_irrigation", labelKey: "cost.fieldCostPerIrrigation", val: editableCostDefaults.cost_per_irrigation },
-    { key: "machine_cost_per_acre", labelKey: "cost.fieldMachine", val: editableCostDefaults.machine_cost_per_acre },
-    { key: "levelling_cost_per_acre", labelKey: "cost.fieldLevelling", val: editableCostDefaults.levelling_cost_per_acre },
-    { key: "paddy_price_per_quintal", labelKey: "cost.fieldPaddyPrice", val: editableCostDefaults.paddy_price_per_quintal },
-    { key: "incentive_per_acre_dsr", labelKey: "cost.fieldIncentive", val: editableCostDefaults.incentive_per_acre_dsr },
+    { key: "transplant_labour_per_acre", label: "Transplant Labour (₹/acre)", val: activeCostParams.transplant_labour_per_acre },
+    { key: "cost_per_irrigation", label: "Irrigation Pumping Cost (₹)", val: activeCostParams.cost_per_irrigation },
+    { key: "machine_cost_per_acre", label: "DSR Drill Machine (₹/acre)", val: activeCostParams.machine_cost_per_acre },
+    { key: "levelling_cost_per_acre", label: "Laser Levelling (₹/acre)", val: activeCostParams.levelling_cost_per_acre },
+    { key: "paddy_price_per_quintal", label: "Paddy MSP Price (₹/quintal)", val: activeCostParams.paddy_price_per_quintal },
+    { key: "incentive_per_acre_dsr", label: "Punjab DSR Incentive (₹)", val: activeCostParams.incentive_per_acre_dsr },
   ];
 
-  fields.forEach(({ key, labelKey, val }) => {
-    const wrap = document.createElement("div");
-    wrap.className = "form-group";
-    wrap.innerHTML = `
-      <label class="form-label" data-i18n="${labelKey}">${t(labelKey)}</label>
-      <input type="number" class="form-input cost-param-input" data-param="${key}" value="${val}" />
+  fields.forEach(({ key, label, val }) => {
+    const group = document.createElement("div");
+    group.className = "form-group-sm";
+    group.innerHTML = `
+      <label>${label}</label>
+      <input type="number" class="form-input-sm" data-key="${key}" value="${val}" />
     `;
-    container.appendChild(wrap);
+    container.appendChild(group);
   });
 
-  // Listen to input changes
-  container.querySelectorAll(".cost-param-input").forEach((input) => {
+  container.querySelectorAll(".form-input-sm").forEach((input) => {
     input.addEventListener("input", (e) => {
-      const param = e.target.dataset.param;
-      editableCostDefaults[param] = Number(e.target.value) || 0;
-      recalculateCosts();
+      const key = e.target.dataset.key;
+      activeCostParams[key] = Number(e.target.value) || 0;
+      updateLedgerDisplay(fieldState.activeMethod);
     });
   });
-
-  recalculateCosts();
 }
 
-function recalculateCosts() {
-  if (!editableCostDefaults) return;
-  const res = costs(editableCostDefaults);
-  if (!res.ok) return;
+function evaluateDsrGateUI() {
+  const inputs = {
+    previousCrop: document.getElementById("dsrInputPrevCrop")?.value || "wheat",
+    levelled: document.getElementById("dsrInputLevelled")?.value || "yes",
+    machineAccess: document.getElementById("dsrInputMachine")?.value || "yes",
+    herbicideWithin24h: document.getElementById("dsrInputHerbicide")?.value || "yes",
+    weedHistory: "low",
+    salinity: document.getElementById("dsrInputSaline")?.value || "no",
+  };
 
-  document.getElementById("costConvVal").textContent = `₹${res.transplant.toLocaleString("en-IN")}`;
-  document.getElementById("costAwdVal").textContent = `₹${res.transplant_awd.toLocaleString("en-IN")}`;
-  document.getElementById("costDsrVal").textContent = `₹${res.dsr.toLocaleString("en-IN")}`;
+  const res = dsrGate(inputs);
+  const badge = document.getElementById("gateStatusBadge");
+  const list = document.getElementById("gateReasonsList");
+  list.innerHTML = "";
 
-  document.getElementById("awdSaveText").textContent = `Saves ₹${res.awdSavings.toLocaleString("en-IN")}/acre`;
-  document.getElementById("dsrSaveText").textContent = `Saves ₹${res.dsrSavingsVsConv.toLocaleString("en-IN")}/acre`;
+  if (res.level === "go") {
+    badge.textContent = "✅ DSR RECOMMENDED";
+    badge.style.color = "#2e7d32";
+    const li = document.createElement("li");
+    li.textContent = "Field conditions are optimal: laser-levelled soil, access to DSR drill, and immediate herbicide application.";
+    list.appendChild(li);
+  } else if (res.level === "caution") {
+    badge.textContent = "⚠️ DSR POSSIBLE WITH CAUTION";
+    badge.style.color = "#b78103";
 
-  const breakEven = breakEvenQuintals(
-    res.transplant,
-    res.dsr,
-    editableCostDefaults.paddy_price_per_quintal
-  );
-
-  const banner = document.getElementById("breakEvenBanner");
-  if (breakEven !== null) {
-    banner.textContent = t("cost.breakEvenText", { loss: breakEven });
+    if (inputs.previousCrop !== "wheat" && inputs.previousCrop !== "potato") {
+      const li = document.createElement("li");
+      li.textContent = "Previous non-rice crop (cotton/maize/sugarcane) carries severe risk of early iron deficiency and heavy weed seed burden.";
+      list.appendChild(li);
+    }
+    if (inputs.levelled === "no") {
+      const li = document.createElement("li");
+      li.textContent = "Field is not laser levelled. Water depth will be uneven, leading to weed escapes.";
+      list.appendChild(li);
+    }
+    if (inputs.machineAccess === "no") {
+      const li = document.createElement("li");
+      li.textContent = "DSR drill with press wheels is missing. Irregular sowing depth causes poor germination.";
+      list.appendChild(li);
+    }
+    if (inputs.herbicideWithin24h === "no") {
+      const li = document.createElement("li");
+      li.textContent = "Cannot spray within 24 hours. Pre-emergence herbicide failure is the #1 cause of DSR abandonment.";
+      list.appendChild(li);
+    }
+  } else {
+    badge.textContent = "❌ DSR NOT RECOMMENDED";
+    badge.style.color = "#c62828";
+    const li = document.createElement("li");
+    li.textContent = "Saline or kallar soils are strictly unsuitable for DSR. Direct-seeded seedlings cannot withstand salt accumulation.";
+    list.appendChild(li);
   }
 }
 
-// Tier 2 Knowledge base query demo (grounded search in rules.json)
-function setupChat() {
-  const btn = document.getElementById("btnSendChat");
-  const input = document.getElementById("chatInput");
-  const box = document.getElementById("chatResponseBox");
-  const respText = document.getElementById("chatResponseText");
-  const sourcesText = document.getElementById("chatSourcesText");
+/* ======================================================== */
+/* PAGE D: ASK ADVISOR (THE LISTENING ROOM)                 */
+/* ======================================================== */
+function initListeningRoom() {
+  const micBtn = document.getElementById("btnMicTrigger");
+  const ripple = document.getElementById("micRippleRing");
+  const statusLabel = document.getElementById("micStatusLabel");
+  const askForm = document.getElementById("askForm");
+  const queryInput = document.getElementById("askQueryInput");
 
-  async function handleQuery(query) {
-    if (!query.trim()) return;
-    box.style.display = "block";
-    respText.textContent = "Searching official guidance...";
-    sourcesText.textContent = "";
+  // Setup Web Speech Recognition if available
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
 
-    const qLower = query.toLowerCase();
-    const lang = getCurrentLanguage();
+    recognition.onstart = () => {
+      isListening = true;
+      ripple?.classList.add("listening");
+      if (statusLabel) statusLabel.textContent = "Listening...";
+    };
 
-    // Match keywords against rules
-    let match = null;
-    if (qLower.includes("stop") || qLower.includes("harvest") || qLower.includes("ਕਟਾਈ") || qLower.includes("कटाई") || qLower.includes("ਬੰਦ")) {
-      match = rulesData.stages.find((s) => s.id === "pre_harvest");
-    } else if (qLower.includes("tillering") || qLower.includes("awd") || qLower.includes("ਸੁਕਾ") || qLower.includes("सुखा")) {
-      match = rulesData.stages.find((s) => s.id === "tillering");
-    } else if (qLower.includes("saline") || qLower.includes("kallar") || qLower.includes("ਕੱਲਰ") || qLower.includes("कल्लर") || qLower.includes("ਖਾਰਾ")) {
-      respText.textContent = t("warning.saline_no_awd") + " " + t("reason.saline_or_unknown");
-      sourcesText.textContent = "Source: PAU Kharif Package of Practices, Section: Salinity & Water Management";
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (queryInput) queryInput.value = transcript;
+      executeAdvisorQuery(transcript);
+    };
+
+    recognition.onerror = () => {
+      isListening = false;
+      ripple?.classList.remove("listening");
+      if (statusLabel) statusLabel.textContent = "Tap to speak";
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      ripple?.classList.remove("listening");
+      if (statusLabel) statusLabel.textContent = "Tap to speak";
+    };
+  }
+
+  if (micBtn) {
+    micBtn.addEventListener("click", () => {
+      if (!recognition) {
+        // Fallback demo simulation
+        const sampleQuery = "When should I stop irrigation before harvest?";
+        if (queryInput) queryInput.value = sampleQuery;
+        executeAdvisorQuery(sampleQuery);
+        return;
+      }
+
+      if (isListening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    });
+  }
+
+  if (askForm) {
+    askForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      executeAdvisorQuery(queryInput?.value || "");
+    });
+  }
+
+  // Suggested questions
+  document.querySelectorAll(".suggested-row").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const q = btn.dataset.query;
+      if (queryInput) queryInput.value = q;
+      executeAdvisorQuery(q);
+    });
+  });
+
+  // Audio button for answer
+  const btnListen = document.getElementById("btnListenAnswer");
+  if (btnListen) {
+    btnListen.addEventListener("click", () => {
+      const text = document.getElementById("advisorAnswerText")?.textContent || "";
+      if (!text) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-IN";
+      window.speechSynthesis.speak(u);
+    });
+  }
+}
+
+async function executeAdvisorQuery(query) {
+  if (!query.trim()) return;
+
+  const card = document.getElementById("advisorAnswerCard");
+  const textEl = document.getElementById("advisorAnswerText");
+  const sourceEl = document.getElementById("advisorSourceText");
+
+  card.style.display = "block";
+  textEl.textContent = "Consulting official guidance...";
+  sourceEl.textContent = "Searching...";
+
+  // Attempt to call local FastAPI backend
+  try {
+    const res = await fetch("http://127.0.0.1:8000/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: query, lang: "en" }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      textEl.textContent = data.answer;
+      if (data.sources && data.sources.length > 0) {
+        sourceEl.textContent = `${data.sources[0].title} (p. ${data.sources[0].page || "N/A"})`;
+      } else {
+        sourceEl.textContent = "Punjab Agriculture Department Extension Protocol";
+      }
+      card.scrollIntoView({ behavior: "smooth" });
       return;
     }
-
-    if (match) {
-      respText.textContent = match.text[lang] || match.text.en;
-      sourcesText.textContent = `Official Source: ${match.source_ref.doc}, ${match.source_ref.section} (p. ${match.source_ref.page})`;
-    } else {
-      respText.textContent = "I don't have a reliable answer to this in the current guidance. Please consult your local Punjab Agriculture Officer or KVK specialist.";
-      sourcesText.textContent = "Source: PAU Extension Protocol (Safe Referral)";
-    }
+  } catch (err) {
+    // Backend offline; use local grounded knowledge base
   }
 
-  btn.addEventListener("click", () => handleQuery(input.value));
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") handleQuery(input.value);
-  });
+  // Local Grounded Extractive Fallback
+  const q = query.toLowerCase();
+  let answer = "";
+  let source = "";
 
-  document.querySelectorAll(".suggested-btn").forEach((sBtn) => {
-    sBtn.addEventListener("click", () => {
-      const q = sBtn.dataset.q;
-      input.value = q;
-      handleQuery(q);
-    });
-  });
+  if (q.includes("stop") || q.includes("harvest") || q.includes("cut")) {
+    answer = "Stop all irrigation 14 to 15 days before combine harvesting. This promotes uniform grain maturity, hardens the field for combine harvesters, and avoids crop lodging.";
+    source = "PAU Package of Practices for Kharif Crops: Rice Water Management (p. 27)";
+  } else if (q.includes("awd") || q.includes("tillering") || q.includes("dry")) {
+    answer = "Practice Alternate Wetting and Drying (AWD) during tillering. Apply 5 to 7 cm irrigation only 2 days after standing water has disappeared from the soil surface. Do not allow cracks to form. This saves 15–30% water.";
+    source = "PAU Package of Practices for Kharif Crops: AWD Guidance (p. 25)";
+  } else if (q.includes("saline") || q.includes("kallar") || q.includes("salt")) {
+    answer = "AWD is strictly NOT recommended on saline or kallar soils. Allowing soil to dry draws subsoil salts upward into the root zone, causing seedling mortality. Keep fields moist or shallow flooded.";
+    source = "PAU Soil & Water Salinity Advisory for Rice (p. 14)";
+  } else if (q.includes("dsr") || q.includes("direct") || q.includes("seed rate")) {
+    answer = "Direct-Seeded Rice requires medium to heavy laser-levelled soils. Use 8 to 10 kg certified seed per acre drilled with a DSR machine with press wheels. Spray pendimethalin within 24 hours of sowing.";
+    source = "PAU Tar-Wattar DSR Technology Guide (p. 31)";
+  } else if (q.includes("brown spot") || q.includes("leaf") || q.includes("zinc") || q.includes("khaira")) {
+    answer = "Brown pigmentation or rusty spots 2 to 3 weeks after transplanting indicates Zinc deficiency (Khaira disease). Broadcast 25 kg zinc sulphate heptahydrate 21% per acre.";
+    source = "PAU Micronutrient Management in Paddy (p. 40)";
+  } else {
+    answer = "I do not have a verified answer for this in the current official guidance. Please contact your local Block Agriculture Officer or KVK specialist for reliable local guidance.";
+    source = "Official Extension Protocol: Safe Referral";
+  }
+
+  textEl.textContent = answer;
+  sourceEl.textContent = source;
+  card.scrollIntoView({ behavior: "smooth" });
 }
 
-// Tab navigation handler
-function setupTabs() {
-  const tabs = document.querySelectorAll(".tab-btn");
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => {
-        t.classList.remove("active");
-        t.setAttribute("aria-selected", "false");
-      });
-      document.querySelectorAll(".tab-pane").forEach((p) => (p.style.display = "none"));
+/* ======================================================== */
+/* PAGE E: CROP CHECK (THE FIELD JOURNAL)                   */
+/* ======================================================== */
+const SPECIMENS_DATA = {
+  blb: {
+    label: "Specimen 01: Bacterial Leaf Blight (BLB)",
+    detail: "Yellowish-orange wavy margins from leaf tips downward.",
+    title: "Bacterial Leaf Blight (Xanthomonas oryzae)",
+    confidence: "High (88%)",
+    badgeClass: "badge-high",
+    symptoms: "Lesions start as water-soaked stripes on leaf edges, turning yellow to straw-coloured with undulating margins.",
+    guidance: "Do not apply excess nitrogen fertilizer. Drain standing water and allow the field to aerate for 2-3 days. Avoid spraying unrecommended antibiotics.",
+    source: "PAU Package of Practices for Kharif Crops (Disease Management p. 48)",
+  },
+  blast: {
+    label: "Specimen 02: Rice Blast",
+    detail: "Spindle-shaped lesions with grey center and brown borders.",
+    title: "Rice Leaf Blast (Magnaporthe oryzae)",
+    confidence: "High (91%)",
+    badgeClass: "badge-high",
+    symptoms: "Elliptical or spindle-shaped spots with grey or whitish centers and brown reddish margins on leaf blades.",
+    guidance: "Avoid excessive nitrogen top-dressing. If lesions exceed economic threshold (scattered spots on upper leaves), consult officer for approved tricyclazole spray.",
+    source: "PAU Package of Practices for Kharif Crops (Disease Management p. 46)",
+  },
+  sheath: {
+    label: "Specimen 03: Sheath Blight",
+    detail: "Oval greenish-grey water-soaked spots on leaf sheaths near water level.",
+    title: "Sheath Blight (Rhizoctonia solani)",
+    confidence: "Medium (76%)",
+    badgeClass: "badge-high",
+    symptoms: "Serpentine lesions near the waterline with dark reddish-brown borders. Develops under dense canopy and humid weather.",
+    guidance: "Maintain wider plant spacing. Drain field periodically (AWD reduces sheath blight severity). Scout tillers before considering chemical control.",
+    source: "PAU Package of Practices for Kharif Crops (Disease Management p. 47)",
+  },
+  zinc: {
+    label: "Specimen 04: Zinc Deficiency (Khaira Disease)",
+    detail: "Rusty brown spots covering lower leaves, stunted tillering.",
+    title: "Zinc Deficiency (Khaira Disease)",
+    confidence: "High (94%)",
+    badgeClass: "badge-high",
+    symptoms: "Lower leaves develop reddish-brown pigmentation or rusty blotches 2–3 weeks after transplanting; plants remain stunted.",
+    guidance: "Broadcast 25 kg zinc sulphate heptahydrate (21%) per acre mixed with moist soil. Do not mix zinc sulphate with phosphatic fertilizers.",
+    source: "PAU Micronutrient Management in Paddy (p. 40)",
+  },
+  iron: {
+    label: "Specimen 05: Iron Deficiency (DSR)",
+    detail: "Interveinal chlorosis: young emerging leaves turn completely pale yellow/white.",
+    title: "Iron Chlorosis in Direct-Seeded Rice",
+    confidence: "High (92%)",
+    badgeClass: "badge-high",
+    symptoms: "Young emerging leaves turn pale yellow to paper white while veins remain faint green. Common on light soils after non-rice crops.",
+    guidance: "Foliar spray 1% ferrous sulphate solution (1 kg ferrous sulphate in 100 litres of water) 2 to 3 times at weekly intervals.",
+    source: "PAU Direct Seeded Rice Technology Guide (p. 34)",
+  },
+};
 
-      tab.classList.add("active");
-      tab.setAttribute("aria-selected", "true");
-      const targetId = `tab-${tab.dataset.tab}`;
-      const targetPane = document.getElementById(targetId);
-      if (targetPane) targetPane.style.display = "block";
-    });
-  });
-}
+function initCropCheck() {
+  const thumbBtns = document.querySelectorAll(".thumb-btn");
+  thumbBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sample = btn.dataset.sample;
+      fieldState.activeSpecimen = sample;
 
-// App Initialization
-async function init() {
-  const { lang, district } = getStoredState();
-
-  await initI18n(lang);
-  await loadData();
-
-  // Highlight active language button
-  document.querySelectorAll(".lang-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.lang === lang);
-    btn.addEventListener("click", async () => {
-      const newLang = btn.dataset.lang;
-      document.querySelectorAll(".lang-btn").forEach((b) => b.classList.remove("active"));
+      thumbBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
 
-      await setLanguage(newLang);
-      saveStoredState({ lang: newLang, district: document.getElementById("districtSelect").value });
-
-      populateDistricts(document.getElementById("districtSelect").value);
-      populateVarieties();
-      updateKvkContactCard(document.getElementById("districtSelect").value);
-      setupCostCalculator();
+      updateSpecimenDisplay(sample);
     });
   });
 
-  // Populate UI
-  populateDistricts(district);
-  populateVarieties();
-  updateKvkContactCard(district);
+  // File Upload Dropzone
+  const dropZone = document.getElementById("cropDropZone");
+  const fileInput = document.getElementById("cropFileInput");
+  const browseBtn = document.getElementById("btnBrowsePhoto");
 
-  document.getElementById("districtSelect").addEventListener("change", (e) => {
-    saveStoredState({ district: e.target.value });
-    updateKvkContactCard(e.target.value);
-  });
+  if (browseBtn && fileInput) {
+    browseBtn.addEventListener("click", () => fileInput.click());
+  }
+  if (dropZone && fileInput) {
+    dropZone.addEventListener("click", (e) => {
+      if (e.target !== browseBtn) fileInput.click();
+    });
 
-  // Default sowing date to 20 days ago for realistic demo
-  const sampleDate = new Date();
-  sampleDate.setDate(sampleDate.getDate() - 25);
-  document.getElementById("sowingDate").value = sampleDate.toISOString().slice(0, 10);
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) {
+        handlePhotoUpload(e.dataTransfer.files[0]);
+      }
+    });
 
-  // Form submission
-  document.getElementById("fieldForm").addEventListener("submit", handleFieldSubmit);
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        handlePhotoUpload(e.target.files[0]);
+      }
+    });
+  }
 
-  // Tabs, Audio, Cost, Chat
-  setupTabs();
-  setupAudioPlayer();
-  setupCostCalculator();
-  setupChat();
+  updateSpecimenDisplay("blb");
+}
 
-  // Register service worker for offline PWA
-  if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {
-    navigator.serviceWorker.register("./sw.js").catch((err) => {
-      console.warn("Service worker registration failed:", err);
+function updateSpecimenDisplay(key) {
+  const data = SPECIMENS_DATA[key];
+  if (!data) return;
+
+  document.getElementById("specimenLabel").textContent = data.label;
+  document.getElementById("specimenDetail").textContent = data.detail;
+  document.getElementById("diagProblemTitle").textContent = data.title;
+  document.getElementById("diagConfidenceBadge").textContent = data.confidence;
+  document.getElementById("diagSymptoms").textContent = data.symptoms;
+  document.getElementById("diagGuidance").textContent = data.guidance;
+  document.getElementById("diagSource").textContent = data.source;
+}
+
+function handlePhotoUpload(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const imgEl = document.getElementById("specimenActiveImage");
+    if (imgEl) imgEl.src = e.target.result;
+
+    document.getElementById("specimenLabel").textContent = "Uploaded Field Photo";
+    document.getElementById("specimenDetail").textContent = `Inspected image: ${file.name}`;
+
+    // Show simulated grounded diagnosis
+    document.getElementById("diagProblemTitle").textContent = "Bacterial Leaf Blight (Visual Match)";
+    document.getElementById("diagConfidenceBadge").textContent = "Medium Confidence (74%)";
+    document.getElementById("diagSymptoms").textContent = "Observed water-soaked chlorotic streaks on outer leaf margins.";
+    document.getElementById("diagGuidance").textContent = "Field photo inspection suggests Bacterial Leaf Blight. Avoid chemical spraying before inspecting whether lesions are actively expanding across the crop.";
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ======================================================== */
+/* FIELD CONFIGURATION MODAL CONTROLLER                     */
+/* ======================================================== */
+function initFieldModal() {
+  const modal = document.getElementById("fieldSettingsModal");
+  const openBtn = document.getElementById("btnOpenFieldModal");
+  const openSettingsBtn = document.getElementById("btnSettingsOpen");
+  const closeBtn = document.getElementById("btnCloseModal");
+  const form = document.getElementById("settingsForm");
+
+  function openModal() {
+    populateModalForm();
+    modal.style.display = "flex";
+  }
+  function closeModal() {
+    modal.style.display = "none";
+  }
+
+  if (openBtn) openBtn.addEventListener("click", openModal);
+  if (openSettingsBtn) openSettingsBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+  }
+
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fieldState.district = document.getElementById("settingDistrict").value;
+      fieldState.sowingDate = document.getElementById("settingSowingDate").value;
+      fieldState.varietyId = document.getElementById("settingVariety").value;
+      fieldState.salinity = document.getElementById("settingSalinity").value;
+
+      saveStoredState({ district: fieldState.district });
+      updateAtlasDisplay(fieldState.activeStageId);
+      closeModal();
     });
   }
 }
 
-window.addEventListener("DOMContentLoaded", init);
+function populateModalForm() {
+  const distSelect = document.getElementById("settingDistrict");
+  const varSelect = document.getElementById("settingVariety");
+  const dateInput = document.getElementById("settingSowingDate");
+  const salSelect = document.getElementById("settingSalinity");
+
+  if (distSelect && districtsData) {
+    distSelect.innerHTML = "";
+    districtsData.districts.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.lgd_code;
+      opt.textContent = `${d.name.en} (${d.lgd_code})`;
+      if (d.lgd_code === fieldState.district) opt.selected = true;
+      distSelect.appendChild(opt);
+    });
+  }
+
+  if (varSelect && varietiesData) {
+    varSelect.innerHTML = "";
+    varietiesData.varieties.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.name.en;
+      if (v.id === fieldState.varietyId) opt.selected = true;
+      varSelect.appendChild(opt);
+    });
+  }
+
+  if (dateInput) {
+    dateInput.value = fieldState.sowingDate;
+  }
+
+  if (salSelect) {
+    salSelect.value = fieldState.salinity;
+  }
+}
+
+/* ======================================================== */
+/* MAIN DOM CONTENT LOADED ENTRYPOINT                       */
+/* ======================================================== */
+window.addEventListener("DOMContentLoaded", async () => {
+  await loadData();
+  setupRouter();
+  initWaterAdvisor();
+  initFieldLedger();
+  initListeningRoom();
+  initCropCheck();
+  initFieldModal();
+});

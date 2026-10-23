@@ -1,300 +1,821 @@
 <!DOCTYPE html>
-<html lang="pa">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <title>FarmPlan: Water-Smart Paddy Advisor</title>
-  <meta name="description" content="Science-backed water and cost guidance for Punjab paddy farmers in Punjabi, Hindi, and English." />
+  <meta name="description" content="Practical, science-backed water-saving guidance, DSR cost comparison, and grounded official agronomy for paddy farmers." />
+  
+  <!-- Typography: Fraunces (Editorial Display Serif) & DM Sans (Clear Interface Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..800&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="./src/style.css" />
 </head>
-<body>
-  <!-- Header with Language and District controls -->
-  <header class="top-bar">
-    <div class="top-bar-inner">
-      <h1 class="app-title">
-        <span>🌾</span>
-        <span data-i18n="app.title">FarmPlan: Water-Smart Paddy Advisor</span>
-      </h1>
-      <p class="app-tagline" data-i18n="app.tagline">Science-backed water & cost guidance for Punjab farmers</p>
+<body class="editorial-body">
 
-      <div class="controls-row">
-        <!-- Language Switcher -->
-        <div class="lang-selector" role="radiogroup" aria-label="Language selection">
-          <button type="button" class="lang-btn active" data-lang="pa">ਪੰਜਾਬੀ</button>
-          <button type="button" class="lang-btn" data-lang="hi">हिन्दी</button>
-          <button type="button" class="lang-btn" data-lang="en">English</button>
+  <!-- ================= TOP SITE NAVIGATION ================= -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a href="#home" class="brand-link" aria-label="FarmPlan Home">
+        <span class="brand-wordmark">FarmPlan</span>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="desktop-nav" role="navigation" aria-label="Main Navigation">
+        <a href="#home" class="nav-item active" data-route="home">Home</a>
+        <a href="#water" class="nav-item" data-route="water">Water Guide</a>
+        <a href="#dsr" class="nav-item" data-route="dsr">DSR & Costs</a>
+        <a href="#ask" class="nav-item" data-route="ask">Ask Advisor</a>
+        <a href="#crop" class="nav-item" data-route="crop">Crop Check</a>
+      </nav>
+
+      <!-- Right Header Controls -->
+      <div class="header-controls">
+        <div class="lang-pill" title="English active in this release">
+          <span class="lang-text">English</span>
+          <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
 
-        <!-- District Picker -->
-        <div class="district-picker-wrap">
-          <select id="districtSelect" class="district-select" aria-label="Select Punjab District">
-            <option value="" data-i18n="settings.chooseDistrict">-- Select District --</option>
-          </select>
-        </div>
+        <button type="button" class="btn-profile" id="btnSettingsOpen" aria-label="Field Settings & District" title="Field Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
       </div>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
-  <nav class="nav-tabs" role="tablist">
-    <button type="button" class="tab-btn active" data-tab="advisor" role="tab" aria-selected="true" data-i18n="nav.advisor">
-      💧 Water Advisor
-    </button>
-    <button type="button" class="tab-btn" data-tab="cost" role="tab" aria-selected="false" data-i18n="nav.cost">
-      💰 Cost Calculator
-    </button>
-    <button type="button" class="tab-btn" data-tab="chat" role="tab" aria-selected="false" data-i18n="nav.chat">
-      🤖 Ask AI
-    </button>
-  </nav>
+  <!-- ================= MAIN CONTENT APP CONTAINER ================= -->
+  <main id="app" class="main-viewport">
 
-  <main class="container">
-    <!-- TAB 1: WATER ADVISOR & DSR GATE -->
-    <section id="tab-advisor" class="tab-pane active" role="tabpanel">
-      <!-- Input Form Card -->
-      <div class="card">
-        <h2 class="card-title">
-          <span>📋</span>
-          <span data-i18n="form.title">About Your Field</span>
-        </h2>
-        
-        <form id="fieldForm">
-          <!-- Sowing Method -->
-          <div class="form-group">
-            <label class="form-label" for="sowingMethod" data-i18n="form.sowingMethod">Sowing Method</label>
-            <select id="sowingMethod" class="form-select" required>
-              <option value="transplant" data-i18n="form.transplant">Transplanted Paddy</option>
-              <option value="dsr" data-i18n="form.dsr">Direct Seeded Rice (DSR)</option>
-            </select>
+    <!-- ======================================================== -->
+    <!-- PAGE A: HOME — "The Living Field"                        -->
+    <!-- ======================================================== -->
+    <section id="page-home" class="view-page active">
+      <div class="home-hero-wrap">
+        <!-- Contour line vector decoration -->
+        <svg class="contour-line-top" viewBox="0 0 1440 220" fill="none" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M-20 60 C320 180, 720 10, 1100 120 C1280 170, 1400 90, 1460 70" stroke="#DCE4D2" stroke-width="1.5" stroke-dasharray="4 6"/>
+          <path d="M-20 120 C380 240, 780 70, 1160 170 C1320 210, 1420 140, 1460 120" stroke="#6D9BA6" stroke-width="1.2" stroke-opacity="0.4"/>
+        </svg>
+
+        <div class="home-hero-grid">
+          <!-- Left Editorial Typography -->
+          <div class="home-hero-content">
+            <h1 class="hero-headline">
+              Smarter<br/>
+              paddy.<br/>
+              With <span class="italic-highlight">less</span><br/>
+              water.
+            </h1>
+
+            <p class="hero-lead">
+              Practical, science-backed guidance for paddy farmers.
+            </p>
+
+            <div class="hero-actions">
+              <a href="#ask" class="btn-pill-dark">
+                <span>Ask your advisor</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
+              <a href="#water" class="btn-pill-ghost">
+                <span>Explore water guide</span>
+              </a>
+            </div>
+
+            <!-- Scroll invitation -->
+            <div class="scroll-affordance">
+              <div class="scroll-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+              </div>
+              <span class="scroll-label">Scroll to explore</span>
+            </div>
           </div>
 
-          <!-- Sowing Date -->
-          <div class="form-group">
-            <label class="form-label" for="sowingDate" data-i18n="form.sowingDate">Sowing / Transplanting Date</label>
-            <input type="date" id="sowingDate" class="form-input" required />
-          </div>
+          <!-- Right Organic Image Canvas -->
+          <div class="home-hero-visual">
+            <div class="stamp-badge">
+              <span>HEALTHY FIELDS</span>
+              <span class="stamp-sub">BRIGHTER TOMORROWS</span>
+            </div>
 
-          <!-- Paddy Variety -->
-          <div class="form-group">
-            <label class="form-label" for="varietySelect" data-i18n="form.variety">Paddy Variety</label>
-            <select id="varietySelect" class="form-select">
-              <!-- Populated dynamically from varieties.json -->
-            </select>
+            <div class="organic-landscape-frame">
+              <img src="./assets/home_hero_landscape.png" alt="Paddy farmer standing in lush green field at morning sunrise" class="hero-image" />
+              
+              <!-- Floating Value Statement Badge -->
+              <div class="floating-value-tag">
+                <div class="value-item">Less water</div>
+                <div class="value-item">Same yield</div>
+                <div class="value-item highlight">Stronger farmers</div>
+              </div>
+            </div>
           </div>
-
-          <!-- Soil Type -->
-          <div class="form-group">
-            <label class="form-label" for="soilType" data-i18n="form.soilType">Soil Type</label>
-            <select id="soilType" class="form-select">
-              <option value="loam" data-i18n="form.soilLoam">Loam / Medium (Mera)</option>
-              <option value="sandy" data-i18n="form.soilSandy">Sandy / Light (Raitli)</option>
-              <option value="clay" data-i18n="form.soilClay">Clay / Heavy (Dakar)</option>
-            </select>
-          </div>
-
-          <!-- Previous Crop -->
-          <div class="form-group">
-            <label class="form-label" for="previousCrop" data-i18n="form.previousCrop">Previous Crop in Field</label>
-            <select id="previousCrop" class="form-select">
-              <option value="wheat" data-i18n="form.prevWheat">Wheat (Kanak)</option>
-              <option value="potato" data-i18n="form.prevPotato">Potato / Vegetables</option>
-              <option value="cotton" data-i18n="form.prevCotton">Cotton (Narma)</option>
-              <option value="maize" data-i18n="form.prevMaize">Maize (Makki)</option>
-              <option value="sugarcane" data-i18n="form.prevSugarcane">Sugarcane (Kamad)</option>
-              <option value="other_non_rice" data-i18n="form.prevOther">Other Non-Rice Crop</option>
-            </select>
-          </div>
-
-          <!-- Laser Levelled -->
-          <div class="form-group">
-            <label class="form-label" for="isLevelled" data-i18n="form.levelled">Is the field laser-levelled?</label>
-            <select id="isLevelled" class="form-select">
-              <option value="yes" data-i18n="form.yes">Yes</option>
-              <option value="no" data-i18n="form.no">No</option>
-            </select>
-          </div>
-
-          <!-- Machine Access -->
-          <div class="form-group">
-            <label class="form-label" for="machineAccess" data-i18n="form.machineAccess">Access to DSR seed drill machine?</label>
-            <select id="machineAccess" class="form-select">
-              <option value="yes" data-i18n="form.yes">Yes</option>
-              <option value="no" data-i18n="form.no">No</option>
-            </select>
-          </div>
-
-          <!-- Herbicide Timing -->
-          <div class="form-group">
-            <label class="form-label" for="herbicideWithin24h" data-i18n="form.herbicideWithin24h">Can spray weedicide within 24 hours of sowing?</label>
-            <select id="herbicideWithin24h" class="form-select">
-              <option value="yes" data-i18n="form.yes">Yes</option>
-              <option value="no" data-i18n="form.no">No</option>
-            </select>
-          </div>
-
-          <!-- Weed History -->
-          <div class="form-group">
-            <label class="form-label" for="weedHistory" data-i18n="form.weedHistory">Weed Infestation History</label>
-            <select id="weedHistory" class="form-select">
-              <option value="low" data-i18n="form.weedLow">Normal / Manageable</option>
-              <option value="heavy" data-i18n="form.weedHeavy">Heavy weed problem</option>
-            </select>
-          </div>
-
-          <!-- Salinity -->
-          <div class="form-group">
-            <label class="form-label" for="salinityStatus" data-i18n="form.salinity">Saline / Kallar soil or brackish tubewell water?</label>
-            <select id="salinityStatus" class="form-select">
-              <option value="no" data-i18n="form.no">No</option>
-              <option value="yes" data-i18n="form.yes">Yes</option>
-              <option value="dontKnow" data-i18n="form.dontKnow">Don't know</option>
-            </select>
-          </div>
-
-          <button type="submit" class="btn-primary" id="btnCalculate">
-            <span>💧</span>
-            <span data-i18n="form.submit">Calculate Water Rule & DSR Check</span>
-          </button>
-        </form>
+        </div>
       </div>
 
-      <!-- Result Card -->
-      <div id="resultCard" class="card result-box">
-        <h2 class="card-title">
-          <span>💧</span>
-          <span data-i18n="result.waterRuleTitle">Irrigation Recommendation</span>
-        </h2>
+      <!-- Core Jobs Editorial Sections (No Generic Card Grids) -->
+      <div class="home-sections-wrap">
+        <div class="section-divider-label">CORE PRACTICES</div>
 
-        <!-- Stage badge & days -->
-        <div>
-          <span id="stageBadge" class="stage-badge">Stage: Tillering</span>
-          <span id="daysCount" style="font-size: 0.85rem; color: var(--text-muted); margin-left: 8px;"></span>
-        </div>
+        <!-- Job 1: The Water Atlas -->
+        <article class="editorial-job-row">
+          <div class="job-meta">
+            <span class="job-num">01</span>
+            <span class="job-tag">IRRIGATION SCHEDULE</span>
+          </div>
+          <div class="job-body">
+            <h2 class="job-title">The Water Atlas: AWD Stage Guidance</h2>
+            <p class="job-desc">
+              Paddy does not need continuous submergence. Alternate Wetting and Drying (AWD) allows roots to breathe and draw deeper moisture, saving 15–30% irrigation water without yield penalty.
+            </p>
+          </div>
+          <div class="job-cta">
+            <a href="#water" class="job-link">
+              <span>Launch Water Atlas</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </article>
 
-        <!-- Water Rule text -->
-        <div id="ruleTextDisplay" class="rule-text"></div>
+        <!-- Job 2: The Field Ledger -->
+        <article class="editorial-job-row">
+          <div class="job-meta">
+            <span class="job-num">02</span>
+            <span class="job-tag">ECONOMICS & FEASIBILITY</span>
+          </div>
+          <div class="job-body">
+            <h2 class="job-title">The Field Ledger: Compare Costs & DSR</h2>
+            <p class="job-desc">
+              Direct-Seeded Rice (DSR) reduces labour and pumping costs, but requires laser-levelled loam soil and 24-hour herbicide discipline. Compare real per-acre costs and calculate your break-even yield.
+            </p>
+          </div>
+          <div class="job-cta">
+            <a href="#dsr" class="job-link">
+              <span>Open Field Ledger</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </article>
 
-        <!-- Audio controls (free browser TTS) -->
-        <div class="audio-controls">
-          <button type="button" id="btnListenAudio" class="btn-listen">
-            <span>🔊</span>
-            <span id="audioBtnText" data-i18n="result.listen">Listen</span>
-          </button>
-        </div>
+        <!-- Job 3: The Listening Room -->
+        <article class="editorial-job-row">
+          <div class="job-meta">
+            <span class="job-num">03</span>
+            <span class="job-tag">TRUSTED AI ADVICE</span>
+          </div>
+          <div class="job-body">
+            <h2 class="job-title">The Listening Room: Grounded Agronomy</h2>
+            <p class="job-desc">
+              Speak or type questions. Answers are retrieved strictly from Punjab Agricultural University (PAU) and ICAR packages of practices—with page citations, zero hallucinations, and local officer referrals.
+            </p>
+          </div>
+          <div class="job-cta">
+            <a href="#ask" class="job-link">
+              <span>Enter Listening Room</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </article>
 
-        <!-- Warnings container -->
-        <div id="warningsContainer"></div>
-
-        <!-- DSR Gate Result -->
-        <div id="dsrResultBox" class="dsr-result">
-          <div id="dsrBadge" class="dsr-badge"></div>
-          <ul id="dsrReasonsList" class="reasons-list"></ul>
-          <p id="dsrAwdNote" style="margin-top: 10px; font-size: 0.88rem; font-style: italic; color: var(--primary-dark);"></p>
-        </div>
-
-        <!-- Source Citation -->
-        <div id="sourceRefBox" class="source-ref">
-          <strong data-i18n="result.sourceTitle">Official University Source</strong>:
-          <span id="sourceRefText">PAU Package of Practices for Kharif Crops</span>
-        </div>
-
-        <!-- KVK Officer Referral Contact -->
-        <div id="kvkContactBadge" class="kvk-badge"></div>
+        <!-- Job 4: The Field Journal -->
+        <article class="editorial-job-row">
+          <div class="job-meta">
+            <span class="job-num">04</span>
+            <span class="job-tag">VISUAL DIAGNOSTICS</span>
+          </div>
+          <div class="job-body">
+            <h2 class="job-title">The Field Journal: Crop Health Check</h2>
+            <p class="job-desc">
+              Examine visual leaf symptoms for Bacterial Blight, Blast, and Zinc or Iron deficiency. Refuses to guess on unclear photos; always promotes scouting before expensive spraying.
+            </p>
+          </div>
+          <div class="job-cta">
+            <a href="#crop" class="job-link">
+              <span>Inspect Crop Photos</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </article>
       </div>
     </section>
 
-    <!-- TAB 2: COST CALCULATOR -->
-    <section id="tab-cost" class="tab-pane" style="display: none;" role="tabpanel">
-      <div class="card">
-        <h2 class="card-title">
-          <span>💰</span>
-          <span data-i18n="cost.title">Per-Acre Cost Comparison</span>
-        </h2>
+    <!-- ======================================================== -->
+    <!-- PAGE B: WATER ADVISOR — "The Water Atlas"               -->
+    <!-- ======================================================== -->
+    <section id="page-water" class="view-page dark-forest-canvas">
+      <div class="water-atlas-container">
+        <!-- Top Atlas Bar -->
+        <div class="atlas-top-bar">
+          <a href="#home" class="atlas-back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <span>Back to Home</span>
+          </a>
 
-        <!-- Comparison 3 Cards -->
-        <div class="cost-grid">
-          <div class="cost-card">
-            <div class="cost-card-name" data-i18n="cost.transplantConventional">Transplanted (Conventional)</div>
-            <div class="cost-card-val" id="costConvVal">₹18,150</div>
-            <div class="cost-card-sub">26 irrigations</div>
+          <button type="button" class="btn-adjust-field" id="btnOpenFieldModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Edit Field Sowing & Variety</span>
+          </button>
+        </div>
+
+        <!-- Header Row -->
+        <div class="atlas-header-row">
+          <div>
+            <h1 class="atlas-title">Water Advisor</h1>
+            <p class="atlas-subtitle">Right water. Healthier crops.</p>
           </div>
-          <div class="cost-card highlight">
-            <div class="cost-card-name" data-i18n="cost.transplantAwd">Transplanted + AWD</div>
-            <div class="cost-card-val" id="costAwdVal">₹15,000</div>
-            <div class="cost-card-sub" id="awdSaveText" style="color: var(--primary); font-weight: 700;">Saves ₹3,150/acre</div>
-          </div>
-          <div class="cost-card">
-            <div class="cost-card-name" data-i18n="cost.dsr">Direct Seeded Rice (DSR)</div>
-            <div class="cost-card-val" id="costDsrVal">₹11,120</div>
-            <div class="cost-card-sub" id="dsrSaveText" style="color: var(--primary); font-weight: 700;">Saves ₹7,030/acre</div>
+
+          <!-- Active Stage Pill -->
+          <div class="atlas-crop-stage-pill" id="atlasStageIndicator">
+            <div class="stage-pill-eyebrow">Your crop stage</div>
+            <div class="stage-pill-name" id="atlasStageTitle">Tillering</div>
+            <div class="stage-pill-days" id="atlasStageDays">Day 28 (21–45 days)</div>
           </div>
         </div>
 
-        <!-- Break-even yield banner -->
-        <div id="breakEvenBanner" class="break-even-banner">
-          DSR is cheaper unless it yields 3.03 quintals less per acre.
+        <!-- Horizontal Crop Stage Timeline -->
+        <div class="timeline-container">
+          <div class="stage-timeline" role="tablist" aria-label="Crop Stage Progression">
+            <button type="button" class="timeline-node" data-stage="establishment" role="tab">
+              <span class="node-icon">🌱</span>
+              <span class="node-label">Establishment</span>
+              <span class="node-days">0–15 days</span>
+            </button>
+
+            <button type="button" class="timeline-node active" data-stage="tillering" role="tab" aria-selected="true">
+              <span class="node-icon">🌿</span>
+              <span class="node-label">Tillering</span>
+              <span class="node-days">16–45 days</span>
+            </button>
+
+            <button type="button" class="timeline-node" data-stage="panicle_initiation" role="tab">
+              <span class="node-icon">🌾</span>
+              <span class="node-label">Panicle Initiation</span>
+              <span class="node-days">46–59 days</span>
+            </button>
+
+            <button type="button" class="timeline-node" data-stage="flowering" role="tab">
+              <span class="node-icon">🌾</span>
+              <span class="node-label">Flowering</span>
+              <span class="node-days">60–75 days</span>
+            </button>
+
+            <button type="button" class="timeline-node" data-stage="grain_filling" role="tab">
+              <span class="node-icon">🌾</span>
+              <span class="node-label">Grain Filling</span>
+              <span class="node-days">76–92 days</span>
+            </button>
+
+            <button type="button" class="timeline-node" data-stage="pre_harvest" role="tab">
+              <span class="node-icon">🚜</span>
+              <span class="node-label">Maturity / Harvest</span>
+              <span class="node-days">93+ days</span>
+            </button>
+          </div>
         </div>
 
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;" data-i18n="cost.estimateDisclaimer">
-          *All figures are estimates based on your numbers. Edit any field below to reflect your actual costs.
-        </p>
+        <!-- Salinity / Flowering Guardrail Alert Container -->
+        <div id="atlasGuardrailAlerts"></div>
 
-        <!-- Collapsible: Editable Cost Defaults -->
-        <details>
-          <summary>✏️ Edit your field numbers (Seed, Labour, Diesel, Irrigations)</summary>
-          <div class="cost-inputs-grid" id="costInputsContainer">
-            <!-- Form fields injected by main.js -->
+        <!-- Living Soil & Root Cross Section Visual + Recommendation Panel -->
+        <div class="atlas-visual-stage">
+          <!-- Soil Cross Section Canvas -->
+          <div class="soil-root-canvas">
+            <img src="./assets/water_soil_section.png" alt="Rice plant root system and soil layers" class="soil-image" />
+            
+            <!-- Water Level Gauge Overlay -->
+            <div class="water-gauge">
+              <div class="gauge-level level-flooded" data-level="flooded">
+                <span class="gauge-dot blue"></span>
+                <span class="gauge-text">Flooded (3–5 cm)</span>
+              </div>
+              <div class="gauge-level level-moist" data-level="moist">
+                <span class="gauge-dot green"></span>
+                <span class="gauge-text">Moist (Good)</span>
+              </div>
+              <div class="gauge-level level-irrigate active" data-level="irrigate">
+                <span class="gauge-dot yellow"></span>
+                <span class="gauge-text">Time to irrigate</span>
+              </div>
+              <div class="gauge-level level-dry" data-level="dry">
+                <span class="gauge-dot red"></span>
+                <span class="gauge-text">Too dry — avoid cracks</span>
+              </div>
+            </div>
           </div>
-        </details>
 
-        <!-- Incentive & Verified note -->
-        <p style="font-size: 0.82rem; color: #555; margin-top: 14px;" data-i18n="cost.incentiveNote">
-          Note: Punjab DSR incentive of Rs 1,500/acre requires portal registration and may arrive with delay.
-        </p>
-        <div id="costLastVerified" style="font-size: 0.78rem; color: #888; margin-top: 6px;"></div>
+          <!-- Prominent Editorial Recommendation Panel -->
+          <div class="recommendation-panel">
+            <div class="rec-header">
+              <span class="rec-drop-icon">💧</span>
+              <span class="rec-eyebrow">Current recommendation</span>
+            </div>
+
+            <div class="rec-content" id="atlasRuleMain">
+              Let the field dry until the water has disappeared, then wait 2 days before irrigating again.
+            </div>
+
+            <div class="rec-sub" id="atlasRuleSub">
+              Do not let cracks appear in the soil. Saves 15–30% water during vegetative growth.
+            </div>
+
+            <div class="rec-controls">
+              <button type="button" class="btn-voice-read" id="btnReadAtlasAudio">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <span id="atlasAudioBtnLabel">Listen to advice</span>
+              </button>
+
+              <span class="rec-tag">Recommended Practice</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wavy Ivory Bottom Info Section -->
+        <div class="atlas-bottom-ivory">
+          <div class="ivory-card-inner">
+            <div class="why-column">
+              <h3 class="ivory-title">Why this rule?</h3>
+              <p class="ivory-body" id="atlasWhyText">
+                Allows oxygen to reach root zones, stimulating deeper anchoring and stronger tillers while conserving canal and tubewell water.
+              </p>
+            </div>
+
+            <div class="source-column">
+              <div class="source-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <strong>Official Sourced Guidance</strong>
+              </div>
+              <p class="source-body" id="atlasSourceText">
+                Punjab Agricultural University (PAU) Package of Practices for Kharif Crops: Rice Water Management (p. 25). Verified for Kharif 2026.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- TAB 3: ASK AI (TIER 2 DEMO) -->
-    <section id="tab-chat" class="tab-pane" style="display: none;" role="tabpanel">
-      <div class="card">
-        <h2 class="card-title">
-          <span>🤖</span>
-          <span data-i18n="nav.chat">Ask AI Advisor</span>
-        </h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
-          Grounded official PAU guidance. Never hallucinates; cites official pages and refers to your KVK officer.
-        </p>
+    <!-- ======================================================== -->
+    <!-- PAGE C: DSR & COSTS — "The Field Ledger"                -->
+    <!-- ======================================================== -->
+    <section id="page-dsr" class="view-page warm-paper-canvas">
+      <div class="ledger-container">
+        <!-- Top Editorial Banner -->
+        <div class="ledger-header-row">
+          <div class="ledger-header-left">
+            <h1 class="ledger-title">Compare methods.<br/>Make the right choice for your field.</h1>
+            <p class="ledger-subtitle">
+              See the real costs, water use and expected yield for different ways to grow paddy.
+            </p>
+          </div>
+          
+          <div class="ledger-stamp-note">
+            <span>Different fields.</span><br/>
+            <span>Different needs.</span><br/>
+            <em>Find what works for yours.</em>
+          </div>
+        </div>
 
-        <!-- Suggested quick queries -->
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
-          <button type="button" class="btn-listen suggested-btn" data-q="When should I stop irrigation before harvest?">
-            🌾 When to stop water before harvest?
+        <!-- Method Selector Pills -->
+        <div class="method-pills-bar" role="tablist">
+          <button type="button" class="method-pill active" data-method="conventional" role="tab" aria-selected="true">
+            Transplanted (Conventional)
           </button>
-          <button type="button" class="btn-listen suggested-btn" data-q="What are the rules for AWD in tillering stage?">
-            💧 AWD irrigation rule in tillering?
+          <button type="button" class="method-pill" data-method="awd" role="tab" aria-selected="false">
+            Transplanted + AWD
           </button>
-          <button type="button" class="btn-listen suggested-btn" data-q="Can I do DSR in saline soil?">
-            ⚠️ Can I do DSR in saline soil?
+          <button type="button" class="method-pill" data-method="dsr" role="tab" aria-selected="false">
+            Direct-Seeded Rice (DSR)
           </button>
         </div>
 
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="chatInput" class="form-input" placeholder="Ask question in Punjabi, Hindi, or English..." />
-          <button type="button" class="btn-primary" id="btnSendChat" style="width: auto; padding: 0 20px;">
-            Ask
-          </button>
+        <!-- Ledger Comparison Layout -->
+        <div class="ledger-main-grid">
+          <!-- Left Visual Photography Panel -->
+          <div class="ledger-visual-panel">
+            <div class="photo-card-wrap">
+              <img id="ledgerMethodPhoto" src="./assets/dsr_seedlings.png" alt="Paddy cultivation method visual" class="ledger-photo" />
+              <div class="photo-caption" id="ledgerMethodCaption">
+                Manual puddling and transplanting: heavy water consumption and nursery labour.
+              </div>
+            </div>
+          </div>
+
+          <!-- Center: Cost Breakdown Bars -->
+          <div class="ledger-breakdown-panel">
+            <h2 class="breakdown-headline">Estimated cost (₹ / acre)</h2>
+
+            <div class="cost-bars-list" id="costBarsList">
+              <!-- Dynamically generated cost items with proportional graphic bars -->
+            </div>
+
+            <div class="total-cost-row">
+              <span class="total-cost-label">Total cost per acre</span>
+              <span class="total-cost-val" id="ledgerTotalVal">₹ 18,150</span>
+            </div>
+
+            <!-- Expandable Customizer -->
+            <button type="button" class="btn-toggle-adjust" id="btnToggleAdjust">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span>Adjust your numbers (Labour, Seed, Diesel)</span>
+              <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <!-- Collapsible Inputs Drawer -->
+            <div class="cost-custom-drawer" id="costCustomDrawer">
+              <div class="custom-inputs-grid" id="customCostInputs">
+                <!-- Dynamically populated inputs -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Water, Yield, & Break-Even Badges -->
+          <div class="ledger-summary-column">
+            <div class="summary-badge water-badge">
+              <div class="badge-icon">💧</div>
+              <div class="badge-title">Water use</div>
+              <div class="badge-value" id="ledgerWaterUse">High (26 irrigations)</div>
+              <div class="badge-sub" id="ledgerWaterSavings">No water saving</div>
+            </div>
+
+            <div class="summary-badge yield-badge">
+              <div class="badge-icon">🌾</div>
+              <div class="badge-title">Typical yield</div>
+              <div class="badge-value" id="ledgerTypicalYield">28–32 quintal / acre</div>
+              <div class="badge-sub">PAU Punjab Average</div>
+            </div>
+
+            <div class="break-even-card" id="ledgerBreakEvenCard">
+              <div class="be-title">Break-even yield loss</div>
+              <div class="be-stat" id="ledgerBreakEvenStat">3.03 q/acre</div>
+              <div class="be-desc" id="ledgerBreakEvenDesc">
+                DSR saves ₹7,030/acre. It remains more profitable than transplanting unless weed pressure causes a yield loss exceeding 3.03 quintals/acre.
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div id="chatResponseBox" style="margin-top: 16px; display: none; padding: 14px; background: #f9fbf9; border: 1.5px solid var(--border); border-radius: 8px;">
-          <p id="chatResponseText" style="font-size: 1rem; line-height: 1.5; font-weight: 500;"></p>
-          <div id="chatSourcesText" style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"></div>
-        </div>
+        <!-- DSR Suitability Gate & Soil Checklist -->
+        <div class="dsr-gate-container">
+          <div class="dsr-gate-header">
+            <h2 class="dsr-gate-title">Is Direct-Seeded Rice (DSR) right for your field?</h2>
+            <p class="dsr-gate-sub">Check your field parameters against PAU Tar-Wattar requirements before committing.</p>
+          </div>
 
-        <div id="chatKvkNotice" class="kvk-badge" style="margin-top: 14px;"></div>
+          <div class="checklist-interactive-grid">
+            <div class="check-item">
+              <label class="check-label">Previous Crop</label>
+              <select id="dsrInputPrevCrop" class="check-select">
+                <option value="wheat">Wheat (Optimal for DSR)</option>
+                <option value="potato">Potato / Vegetables</option>
+                <option value="cotton">Cotton / Narma (Caution: Iron Deficiency)</option>
+                <option value="maize">Maize (Caution: Weeds & Iron)</option>
+                <option value="sugarcane">Sugarcane (Caution: Severe Weeds)</option>
+              </select>
+            </div>
+
+            <div class="check-item">
+              <label class="check-label">Laser Levelling</label>
+              <select id="dsrInputLevelled" class="check-select">
+                <option value="yes">Laser Levelled (Required)</option>
+                <option value="no">Not Levelled (Weed risk)</option>
+              </select>
+            </div>
+
+            <div class="check-item">
+              <label class="check-label">Machine Access</label>
+              <select id="dsrInputMachine" class="check-select">
+                <option value="yes">DSR Drill Available</option>
+                <option value="no">No DSR Drill (Cannot sow)</option>
+              </select>
+            </div>
+
+            <div class="check-item">
+              <label class="check-label">Herbicide Within 24h</label>
+              <select id="dsrInputHerbicide" class="check-select">
+                <option value="yes">Yes (Pendimethalin ready)</option>
+                <option value="no">No (High weed failure risk)</option>
+              </select>
+            </div>
+
+            <div class="check-item">
+              <label class="check-label">Saline / Kallar Soil</label>
+              <select id="dsrInputSaline" class="check-select">
+                <option value="no">Normal / Sweet Soil</option>
+                <option value="yes">Saline / Kallar (Unsuitable)</option>
+                <option value="dontKnow">Don't know</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Gate Evaluation Result -->
+          <div class="gate-result-banner" id="gateResultBanner">
+            <div class="gate-status-pill" id="gateStatusBadge">✅ DSR RECOMMENDED</div>
+            <ul class="gate-reasons-list" id="gateReasonsList">
+              <li>Field meets laser-levelling, medium loam texture, and weed control prerequisites.</li>
+            </ul>
+            <div class="gate-awd-alternative">
+              <em>Note: AWD on transplanted paddy requires no special drill or herbicide regimen; consider this if machines are scarce.</em>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
+
+    <!-- ======================================================== -->
+    <!-- PAGE D: ASK ADVISOR — "The Listening Room"              -->
+    <!-- ======================================================== -->
+    <section id="page-ask" class="view-page listening-room-canvas">
+      <div class="listening-container">
+        <!-- Top Title & Tagline -->
+        <div class="listening-header-grid">
+          <div class="listening-left">
+            <h1 class="listening-title">Ask your<br/>advisor.</h1>
+            <p class="listening-subtitle">
+              Get clear, practical answers from official sources.
+            </p>
+
+            <div class="handwritten-aside">
+              <p>Real questions.</p>
+              <p>Real answers.</p>
+              <p>From trusted sources.</p>
+            </div>
+          </div>
+
+          <!-- Center Audio Mic Interaction -->
+          <div class="listening-center">
+            <div class="mic-ripple-ring" id="micRippleRing">
+              <button type="button" class="btn-voice-mic" id="btnMicTrigger" aria-label="Tap to speak your question">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </button>
+            </div>
+            <div class="mic-status-label" id="micStatusLabel">Tap to speak</div>
+            <div class="mic-sub-label">Ask in English</div>
+
+            <!-- Text Input Fallback -->
+            <form id="askForm" class="ask-text-form">
+              <input type="text" id="askQueryInput" class="ask-text-input" placeholder="Type a question (e.g. When should I stop irrigation before harvest?)" />
+              <button type="submit" class="btn-ask-submit">Ask</button>
+            </form>
+          </div>
+
+          <!-- Right: Curated Suggested Queries -->
+          <div class="listening-right">
+            <h3 class="suggested-heading">Try asking</h3>
+            <div class="suggested-rows-list">
+              <button type="button" class="suggested-row" data-query="Can I use AWD in my field?">
+                <span class="row-icon">💧</span>
+                <span class="row-text">Can I use AWD in my field?</span>
+                <span class="row-arrow">›</span>
+              </button>
+
+              <button type="button" class="suggested-row" data-query="Is DSR suitable for my soil?">
+                <span class="row-icon">🌾</span>
+                <span class="row-text">Is DSR suitable for my soil?</span>
+                <span class="row-arrow">›</span>
+              </button>
+
+              <button type="button" class="suggested-row" data-query="What causes brown spots on leaves?">
+                <span class="row-icon">🍂</span>
+                <span class="row-text">What causes brown spots on leaves?</span>
+                <span class="row-arrow">›</span>
+              </button>
+
+              <button type="button" class="suggested-row" data-query="When should I stop irrigation before harvest?">
+                <span class="row-icon">⏱</span>
+                <span class="row-text">When should I stop irrigation?</span>
+                <span class="row-arrow">›</span>
+              </button>
+
+              <button type="button" class="suggested-row" data-query="Which variety is good for saving water?">
+                <span class="row-icon">🌱</span>
+                <span class="row-text">Which variety is good for my area?</span>
+                <span class="row-arrow">›</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Answer Presentation Card -->
+        <div id="advisorAnswerCard" class="advisor-answer-card" style="display: none;">
+          <div class="answer-header">
+            <span class="answer-badge">Verified Agronomic Guidance</span>
+            <button type="button" class="btn-listen-answer" id="btnListenAnswer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <span>Listen</span>
+            </button>
+          </div>
+
+          <p class="answer-text" id="advisorAnswerText"></p>
+
+          <div class="answer-source-line" id="advisorSourceLine">
+            <strong>Source:</strong> <span id="advisorSourceText">PAU Package of Practices</span>
+          </div>
+
+          <div class="officer-referral-note">
+            ⚠️ <em>For chemical spraying or costly decisions, confirm with your local Block Agriculture Officer or KVK specialist.</em>
+          </div>
+        </div>
+
+        <!-- Background Landscape Horizon Graphic -->
+        <div class="listening-landscape-horizon">
+          <img src="./assets/ask_landscape.png" alt="Paddy field horizon" class="horizon-image" />
+          <span class="horizon-quote">Guidance grounded in science.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- PAGE E: CROP CHECK — "The Field Journal"                 -->
+    <!-- ======================================================== -->
+    <section id="page-crop" class="view-page field-journal-canvas">
+      <div class="journal-container">
+        <!-- Header -->
+        <div class="journal-top-row">
+          <div>
+            <span class="experimental-pill">Experimental Feature • Field Validation</span>
+            <h1 class="journal-title">Crop Check</h1>
+            <p class="journal-subtitle">Identify common paddy problems.</p>
+          </div>
+
+          <div class="journal-badge-note">
+            <img src="./assets/crop_golden_grain.png" alt="Rice panicle grain" class="grain-deco" />
+          </div>
+        </div>
+
+        <!-- Specimen Grid -->
+        <div class="journal-main-grid">
+          <!-- Left: Specimen Plate & Photo Sample Carousel -->
+          <div class="specimen-plate">
+            <div class="specimen-frame">
+              <div class="washi-tape-strip"></div>
+              <img id="specimenActiveImage" src="./assets/crop_leaf_specimen.png" alt="Macro view of paddy leaf lesion" class="specimen-image" />
+              <div class="specimen-caption">
+                <strong id="specimenLabel">Specimen 01: Bacterial Leaf Blight</strong><br/>
+                <small id="specimenDetail">Yellowish-orange wavy margins from leaf tips downward.</small>
+              </div>
+            </div>
+
+            <!-- Thumbnail Selector Stack -->
+            <div class="specimen-thumbs-stack">
+              <button type="button" class="thumb-btn active" data-sample="blb" title="Bacterial Leaf Blight">
+                <span>01</span>
+              </button>
+              <button type="button" class="thumb-btn" data-sample="blast" title="Rice Blast">
+                <span>02</span>
+              </button>
+              <button type="button" class="thumb-btn" data-sample="sheath" title="Sheath Blight">
+                <span>03</span>
+              </button>
+              <button type="button" class="thumb-btn" data-sample="zinc" title="Zinc Deficiency">
+                <span>04</span>
+              </button>
+              <button type="button" class="thumb-btn" data-sample="iron" title="Iron Deficiency">
+                <span>05</span>
+              </button>
+            </div>
+
+            <div class="journal-handwriting">
+              A closer look.<br/>A healthier crop.
+            </div>
+          </div>
+
+          <!-- Right: Upload Dropzone & Diagnostic Report -->
+          <div class="diagnostic-column">
+            <!-- Drop Zone -->
+            <div class="upload-dropzone" id="cropDropZone">
+              <input type="file" id="cropFileInput" accept="image/jpeg,image/png" class="file-hidden-input" />
+              <div class="dropzone-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div class="dropzone-title">Upload a field photo</div>
+              <div class="dropzone-sub">or drag and drop (jpg, png)</div>
+              <button type="button" class="btn-browse-photo" id="btnBrowsePhoto">Choose Photo / Camera</button>
+            </div>
+
+            <!-- Tips for Better Results -->
+            <div class="photo-tips-panel">
+              <h3 class="tips-heading">Tips for a better result</h3>
+              <ul class="tips-list">
+                <li>
+                  <span class="tip-icon">📷</span>
+                  <span>Take a clear, close-up photo of the affected leaf or tiller.</span>
+                </li>
+                <li>
+                  <span class="tip-icon">🌿</span>
+                  <span>Include both healthy green and affected yellow/brown tissue.</span>
+                </li>
+                <li>
+                  <span class="tip-icon">☀️</span>
+                  <span>Use good natural outdoor daylight; avoid heavy flash shadows.</span>
+                </li>
+                <li>
+                  <span class="tip-icon">🔄</span>
+                  <span>Avoid blurry or out-of-focus camera angles.</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Diagnosis Card Result -->
+            <div id="diagnosticResultCard" class="diagnostic-card">
+              <div class="diag-header">
+                <div>
+                  <div class="diag-label">Most likely issue</div>
+                  <h3 class="diag-title" id="diagProblemTitle">Bacterial Leaf Blight (BLB)</h3>
+                </div>
+                <div class="confidence-badge badge-high" id="diagConfidenceBadge">High Confidence</div>
+              </div>
+
+              <div class="diag-section">
+                <strong>Symptoms to verify:</strong>
+                <p id="diagSymptoms">Water-soaked lesions on leaf margins turning yellow-orange and drying with wavy edges.</p>
+              </div>
+
+              <div class="diag-section">
+                <strong>PAU Official Guidance:</strong>
+                <p id="diagGuidance">Do not apply excess nitrogen fertilizer. Drain standing water and allow field to aerate. Avoid spraying unrecommended antibiotics.</p>
+              </div>
+
+              <div class="diag-source-line" id="diagSource">
+                Source: PAU Package of Practices for Kharif Crops (Disease Management p. 48)
+              </div>
+
+              <div class="diag-warning">
+                ⚠️ Always confirm with your local Agriculture Officer or KVK specialist before applying any chemical spray.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <!-- ================= FIELD CONFIGURATION MODAL ================= -->
+  <div id="fieldSettingsModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="settingsModalTitle" class="modal-title">Configure Field Settings</h2>
+        <button type="button" class="btn-close-modal" id="btnCloseModal" aria-label="Close Settings">✕</button>
+      </div>
+
+      <form id="settingsForm" class="modal-form">
+        <div class="form-row">
+          <label class="form-label" for="settingDistrict">District in Punjab</label>
+          <select id="settingDistrict" class="form-select">
+            <!-- Injected dynamically from districts.json -->
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="settingSowingDate">Sowing / Transplanting Date</label>
+          <input type="date" id="settingSowingDate" class="form-input" required />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="settingVariety">Paddy Variety</label>
+          <select id="settingVariety" class="form-select">
+            <!-- Injected from varieties.json -->
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="settingSalinity">Saline / Kallar Soil</label>
+          <select id="settingSalinity" class="form-select">
+            <option value="no">Normal / Sweet Soil</option>
+            <option value="yes">Saline / Brackish Tubewell Water</option>
+            <option value="dontKnow">Don't know</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-pill-dark" style="width: 100%;">Save Field Parameters</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bottom Mobile Navigation Bar -->
+  <nav class="mobile-bottom-nav" role="navigation" aria-label="Mobile Navigation">
+    <a href="#home" class="mobile-nav-link active" data-route="home">
+      <span class="m-icon">🏡</span>
+      <span class="m-text">Home</span>
+    </a>
+    <a href="#water" class="mobile-nav-link" data-route="water">
+      <span class="m-icon">💧</span>
+      <span class="m-text">Water</span>
+    </a>
+    <a href="#dsr" class="mobile-nav-link" data-route="dsr">
+      <span class="m-icon">💰</span>
+      <span class="m-text">Costs</span>
+    </a>
+    <a href="#ask" class="mobile-nav-link" data-route="ask">
+      <span class="m-icon">🤖</span>
+      <span class="m-text">Advisor</span>
+    </a>
+    <a href="#crop" class="mobile-nav-link" data-route="crop">
+      <span class="m-icon">🔬</span>
+      <span class="m-text">Crop</span>
+    </a>
+  </nav>
 
   <script type="module" src="./src/main.js"></script>
 </body>

@@ -12,6 +12,11 @@ build/
 .env
 *.local
 
+# Ignore specification markdown files per user instruction
+FarmPlan_v2_Build_Spec.md
+FarmPlan_v2_Technical_Guide.md
+docs/*.md
+
 # Indexes & generated databases
 *.faiss
 *.sqlite
