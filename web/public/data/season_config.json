@@ -1,0 +1,34 @@
+{
+  "season": "kharif-2026",
+  "verified_on": "2026-10-23",
+  "source_url": "https://agri.punjab.gov.in",
+  "dsr_window": {
+    "start": "2026-05-15",
+    "end": "2026-06-15"
+  },
+  "transplant_zones": [
+    {
+      "zone": 1,
+      "name": "Zone 1 (South-West / Salinity Prone)",
+      "districts": ["025", "026", "651", "028", "034", "036"],
+      "earliest_transplant": "2026-06-11"
+    },
+    {
+      "zone": 2,
+      "name": "Zone 2 (Central & Remaining Districts)",
+      "districts": ["024", "604", "027", "029", "030", "031", "032", "033", "737", "035", "652", "037", "038", "605", "039", "040", "606"],
+      "earliest_transplant": "2026-06-20"
+    }
+  ],
+  "dsr_incentive": {
+    "amount_per_acre": 1500,
+    "currency": "INR",
+    "scheme_open": true,
+    "source": "Punjab Agriculture Department DSR Direct Incentive Scheme"
+  },
+  "notes": {
+    "en": "Transplanting before official dates is prohibited under the Punjab Preservation of Subsoil Water Act to prevent summer groundwater depletion.",
+    "pa": "ਪੰਜਾਬ ਪ੍ਰਜ਼ਰਵੇਸ਼ਨ ਆਫ਼ ਸਬ-ਸੋਇਲ ਵਾਟਰ ਐਕਟ ਤਹਿਤ ਧਰਤੀ ਹੇਠਲੇ ਪਾਣੀ ਨੂੰ ਬਚਾਉਣ ਲਈ ਨਿਰਧਾਰਤ ਮਿਤੀ ਤੋਂ ਪਹਿਲਾਂ ਝੋਨਾ ਲਾਉਣਾ ਮਨ੍ਹਾਂ ਹੈ।",
+    "hi": "पंजाब सब-सॉइल वाटर एक्ट के तहत भूजल संरक्षण हेतु निर्धारित तिथि से पूर्व धान की रोपाई वर्जित है।"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "version": "2026-10",
+  "source": "PAU Package of Practices for Kharif Crops (Rice Varieties)",
+  "verified_on": "2026-10-23",
+  "varieties": [
+    {
+      "id": "pr_126",
+      "name": { "en": "PR 126 (Short Duration)", "pa": "ਪੀ ਆਰ 126 (ਘੱਟ ਸਮਾਂ)", "hi": "पी आर 126 (कम अवधि)" },
+      "method": ["transplant", "dsr"],
+      "duration_days": { "from_sowing": 123, "from_transplanting": 93 },
+      "stage_boundaries_days": {
+        "establishment_end": 15,
+        "tillering_end": 45,
+        "flowering_start": 60,
+        "flowering_end": 75,
+        "maturity": 93
+      },
+      "source": "PAU Recommended List: matures in ~93 days after transplanting, highly water-saving"
+    },
+    {
+      "id": "pr_131",
+      "name": { "en": "PR 131 (Medium Duration)", "pa": "ਪੀ ਆਰ 131 (ਦਰਮਿਆਨਾ ਸਮਾਂ)", "hi": "पी आर 131 (मध्यम अवधि)" },
+      "method": ["transplant", "dsr"],
+      "duration_days": { "from_sowing": 140, "from_transplanting": 110 },
+      "stage_boundaries_days": {
+        "establishment_end": 18,
+        "tillering_end": 55,
+        "flowering_start": 75,
+        "flowering_end": 92,
+        "maturity": 110
+      },
+      "source": "PAU Recommended List: matures in ~110 days after transplanting"
+    },
+    {
+      "id": "pr_128",
+      "name": { "en": "PR 128", "pa": "ਪੀ ਆਰ 128", "hi": "पी आर 128" },
+      "method": ["transplant", "dsr"],
+      "duration_days": { "from_sowing": 141, "from_transplanting": 111 },
+      "stage_boundaries_days": {
+        "establishment_end": 18,
+        "tillering_end": 55,
+        "flowering_start": 75,
+        "flowering_end": 92,
+        "maturity": 111
+      },
+      "source": "PAU Recommended List: matures in ~111 days after transplanting"
+    },
+    {
+      "id": "pusa_44",
+      "name": { "en": "Pusa 44 (Long Duration - High Water)", "pa": "ਪੂਸਾ 44 (ਲੰਮਾ ਸਮਾਂ - ਵੱਧ ਪਾਣੀ)", "hi": "पूसा 44 (लंबी अवधि - अधिक पानी)" },
+      "method": ["transplant"],
+      "duration_days": { "from_sowing": 160, "from_transplanting": 130 },
+      "stage_boundaries_days": {
+        "establishment_end": 20,
+        "tillering_end": 65,
+        "flowering_start": 90,
+        "flowering_end": 110,
+        "maturity": 130
+      },
+      "source": "Note: Unrecommended by Punjab Govt due to excessive groundwater depletion and late harvest"
+    },
+    {
+      "id": "other_unknown",
+      "name": { "en": "Other / Unknown Variety", "pa": "ਹੋਰ / ਕੋਈ ਹੋਰ ਕਿਸਮ", "hi": "अन्य / कोई अन्य किस्म" },
+      "method": ["transplant", "dsr"],
+      "duration_days": { "from_sowing": null, "from_transplanting": null },
+      "stage_boundaries_days": null,
+      "source": "Approximate rule applied"
+    }
+  ]
+}

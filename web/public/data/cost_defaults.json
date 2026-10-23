@@ -1,0 +1,19 @@
+{
+  "last_verified": "2026-10-23",
+  "source": "Punjab Agricultural University (PAU) Cost of Cultivation Studies & Punjab Agriculture Department Advisories",
+  "items": {
+    "seed_rate_kg_per_acre": { "transplant": 5, "dsr": 8 },
+    "seed_price_per_kg": 90,
+    "transplant_labour_per_acre": 4000,
+    "nursery_cost_per_acre": 1200,
+    "herbicide_cost_per_application": 800,
+    "herbicide_applications": { "transplant": 1, "dsr": 2 },
+    "machine_cost_per_acre": 1200,
+    "levelling_cost_per_acre": 1000,
+    "cost_per_irrigation": 450,
+    "irrigations": { "transplant": 26, "transplant_awd": 19, "dsr": 18 },
+    "incentive_per_acre_dsr": 1500,
+    "paddy_price_per_quintal": 2320
+  },
+  "reference_notes": "Baseline estimates for Punjab Kharif: Transplanting manual labour averages Rs 3800-4200/acre; DSR seed drill rental with tractor Rs 1200/acre; Laser land levelling amortised cost Rs 1000/acre; AWD reduces tubewell pumping hours by 20-30% saving 6-7 irrigations; Punjab Govt direct incentive for DSR is Rs 1500/acre (via portal); MSP for common/Grade A paddy is Rs 2300-2320/quintal."
+}

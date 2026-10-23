@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>FarmPlan: Water-Smart Paddy Advisor</title>
+  <meta name="description" content="Science-backed water and cost guidance for Punjab paddy farmers in Punjabi, Hindi, and English." />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <!-- Header with Language and District controls -->
+  <header class="top-bar">
+    <div class="top-bar-inner">
+      <h1 class="app-title">
+        <span>🌾</span>
+        <span data-i18n="app.title">FarmPlan: Water-Smart Paddy Advisor</span>
+      </h1>
+      <p class="app-tagline" data-i18n="app.tagline">Science-backed water & cost guidance for Punjab farmers</p>
+
+      <div class="controls-row">
+        <!-- Language Switcher -->
+        <div class="lang-selector" role="radiogroup" aria-label="Language selection">
+          <button type="button" class="lang-btn active" data-lang="pa">ਪੰਜਾਬੀ</button>
+          <button type="button" class="lang-btn" data-lang="hi">हिन्दी</button>
+          <button type="button" class="lang-btn" data-lang="en">English</button>
+        </div>
+
+        <!-- District Picker -->
+        <div class="district-picker-wrap">
+          <select id="districtSelect" class="district-select" aria-label="Select Punjab District">
+            <option value="" data-i18n="settings.chooseDistrict">-- Select District --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs" role="tablist">
+    <button type="button" class="tab-btn active" data-tab="advisor" role="tab" aria-selected="true" data-i18n="nav.advisor">
+      💧 Water Advisor
+    </button>
+    <button type="button" class="tab-btn" data-tab="cost" role="tab" aria-selected="false" data-i18n="nav.cost">
+      💰 Cost Calculator
+    </button>
+    <button type="button" class="tab-btn" data-tab="chat" role="tab" aria-selected="false" data-i18n="nav.chat">
+      🤖 Ask AI
+    </button>
+  </nav>
+
+  <main class="container">
+    <!-- TAB 1: WATER ADVISOR & DSR GATE -->
+    <section id="tab-advisor" class="tab-pane active" role="tabpanel">
+      <!-- Input Form Card -->
+      <div class="card">
+        <h2 class="card-title">
+          <span>📋</span>
+          <span data-i18n="form.title">About Your Field</span>
+        </h2>
+        
+        <form id="fieldForm">
+          <!-- Sowing Method -->
+          <div class="form-group">
+            <label class="form-label" for="sowingMethod" data-i18n="form.sowingMethod">Sowing Method</label>
+            <select id="sowingMethod" class="form-select" required>
+              <option value="transplant" data-i18n="form.transplant">Transplanted Paddy</option>
+              <option value="dsr" data-i18n="form.dsr">Direct Seeded Rice (DSR)</option>
+            </select>
+          </div>
+
+          <!-- Sowing Date -->
+          <div class="form-group">
+            <label class="form-label" for="sowingDate" data-i18n="form.sowingDate">Sowing / Transplanting Date</label>
+            <input type="date" id="sowingDate" class="form-input" required />
+          </div>
+
+          <!-- Paddy Variety -->
+          <div class="form-group">
+            <label class="form-label" for="varietySelect" data-i18n="form.variety">Paddy Variety</label>
+            <select id="varietySelect" class="form-select">
+              <!-- Populated dynamically from varieties.json -->
+            </select>
+          </div>
+
+          <!-- Soil Type -->
+          <div class="form-group">
+            <label class="form-label" for="soilType" data-i18n="form.soilType">Soil Type</label>
+            <select id="soilType" class="form-select">
+              <option value="loam" data-i18n="form.soilLoam">Loam / Medium (Mera)</option>
+              <option value="sandy" data-i18n="form.soilSandy">Sandy / Light (Raitli)</option>
+              <option value="clay" data-i18n="form.soilClay">Clay / Heavy (Dakar)</option>
+            </select>
+          </div>
+
+          <!-- Previous Crop -->
+          <div class="form-group">
+            <label class="form-label" for="previousCrop" data-i18n="form.previousCrop">Previous Crop in Field</label>
+            <select id="previousCrop" class="form-select">
+              <option value="wheat" data-i18n="form.prevWheat">Wheat (Kanak)</option>
+              <option value="potato" data-i18n="form.prevPotato">Potato / Vegetables</option>
+              <option value="cotton" data-i18n="form.prevCotton">Cotton (Narma)</option>
+              <option value="maize" data-i18n="form.prevMaize">Maize (Makki)</option>
+              <option value="sugarcane" data-i18n="form.prevSugarcane">Sugarcane (Kamad)</option>
+              <option value="other_non_rice" data-i18n="form.prevOther">Other Non-Rice Crop</option>
+            </select>
+          </div>
+
+          <!-- Laser Levelled -->
+          <div class="form-group">
+            <label class="form-label" for="isLevelled" data-i18n="form.levelled">Is the field laser-levelled?</label>
+            <select id="isLevelled" class="form-select">
+              <option value="yes" data-i18n="form.yes">Yes</option>
+              <option value="no" data-i18n="form.no">No</option>
+            </select>
+          </div>
+
+          <!-- Machine Access -->
+          <div class="form-group">
+            <label class="form-label" for="machineAccess" data-i18n="form.machineAccess">Access to DSR seed drill machine?</label>
+            <select id="machineAccess" class="form-select">
+              <option value="yes" data-i18n="form.yes">Yes</option>
+              <option value="no" data-i18n="form.no">No</option>
+            </select>
+          </div>
+
+          <!-- Herbicide Timing -->
+          <div class="form-group">
+            <label class="form-label" for="herbicideWithin24h" data-i18n="form.herbicideWithin24h">Can spray weedicide within 24 hours of sowing?</label>
+            <select id="herbicideWithin24h" class="form-select">
+              <option value="yes" data-i18n="form.yes">Yes</option>
+              <option value="no" data-i18n="form.no">No</option>
+            </select>
+          </div>
+
+          <!-- Weed History -->
+          <div class="form-group">
+            <label class="form-label" for="weedHistory" data-i18n="form.weedHistory">Weed Infestation History</label>
+            <select id="weedHistory" class="form-select">
+              <option value="low" data-i18n="form.weedLow">Normal / Manageable</option>
+              <option value="heavy" data-i18n="form.weedHeavy">Heavy weed problem</option>
+            </select>
+          </div>
+
+          <!-- Salinity -->
+          <div class="form-group">
+            <label class="form-label" for="salinityStatus" data-i18n="form.salinity">Saline / Kallar soil or brackish tubewell water?</label>
+            <select id="salinityStatus" class="form-select">
+              <option value="no" data-i18n="form.no">No</option>
+              <option value="yes" data-i18n="form.yes">Yes</option>
+              <option value="dontKnow" data-i18n="form.dontKnow">Don't know</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btnCalculate">
+            <span>💧</span>
+            <span data-i18n="form.submit">Calculate Water Rule & DSR Check</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Result Card -->
+      <div id="resultCard" class="card result-box">
+        <h2 class="card-title">
+          <span>💧</span>
+          <span data-i18n="result.waterRuleTitle">Irrigation Recommendation</span>
+        </h2>
+
+        <!-- Stage badge & days -->
+        <div>
+          <span id="stageBadge" class="stage-badge">Stage: Tillering</span>
+          <span id="daysCount" style="font-size: 0.85rem; color: var(--text-muted); margin-left: 8px;"></span>
+        </div>
+
+        <!-- Water Rule text -->
+        <div id="ruleTextDisplay" class="rule-text"></div>
+
+        <!-- Audio controls (free browser TTS) -->
+        <div class="audio-controls">
+          <button type="button" id="btnListenAudio" class="btn-listen">
+            <span>🔊</span>
+            <span id="audioBtnText" data-i18n="result.listen">Listen</span>
+          </button>
+        </div>
+
+        <!-- Warnings container -->
+        <div id="warningsContainer"></div>
+
+        <!-- DSR Gate Result -->
+        <div id="dsrResultBox" class="dsr-result">
+          <div id="dsrBadge" class="dsr-badge"></div>
+          <ul id="dsrReasonsList" class="reasons-list"></ul>
+          <p id="dsrAwdNote" style="margin-top: 10px; font-size: 0.88rem; font-style: italic; color: var(--primary-dark);"></p>
+        </div>
+
+        <!-- Source Citation -->
+        <div id="sourceRefBox" class="source-ref">
+          <strong data-i18n="result.sourceTitle">Official University Source</strong>:
+          <span id="sourceRefText">PAU Package of Practices for Kharif Crops</span>
+        </div>
+
+        <!-- KVK Officer Referral Contact -->
+        <div id="kvkContactBadge" class="kvk-badge"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: COST CALCULATOR -->
+    <section id="tab-cost" class="tab-pane" style="display: none;" role="tabpanel">
+      <div class="card">
+        <h2 class="card-title">
+          <span>💰</span>
+          <span data-i18n="cost.title">Per-Acre Cost Comparison</span>
+        </h2>
+
+        <!-- Comparison 3 Cards -->
+        <div class="cost-grid">
+          <div class="cost-card">
+            <div class="cost-card-name" data-i18n="cost.transplantConventional">Transplanted (Conventional)</div>
+            <div class="cost-card-val" id="costConvVal">₹18,150</div>
+            <div class="cost-card-sub">26 irrigations</div>
+          </div>
+          <div class="cost-card highlight">
+            <div class="cost-card-name" data-i18n="cost.transplantAwd">Transplanted + AWD</div>
+            <div class="cost-card-val" id="costAwdVal">₹15,000</div>
+            <div class="cost-card-sub" id="awdSaveText" style="color: var(--primary); font-weight: 700;">Saves ₹3,150/acre</div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-card-name" data-i18n="cost.dsr">Direct Seeded Rice (DSR)</div>
+            <div class="cost-card-val" id="costDsrVal">₹11,120</div>
+            <div class="cost-card-sub" id="dsrSaveText" style="color: var(--primary); font-weight: 700;">Saves ₹7,030/acre</div>
+          </div>
+        </div>
+
+        <!-- Break-even yield banner -->
+        <div id="breakEvenBanner" class="break-even-banner">
+          DSR is cheaper unless it yields 3.03 quintals less per acre.
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;" data-i18n="cost.estimateDisclaimer">
+          *All figures are estimates based on your numbers. Edit any field below to reflect your actual costs.
+        </p>
+
+        <!-- Collapsible: Editable Cost Defaults -->
+        <details>
+          <summary>✏️ Edit your field numbers (Seed, Labour, Diesel, Irrigations)</summary>
+          <div class="cost-inputs-grid" id="costInputsContainer">
+            <!-- Form fields injected by main.js -->
+          </div>
+        </details>
+
+        <!-- Incentive & Verified note -->
+        <p style="font-size: 0.82rem; color: #555; margin-top: 14px;" data-i18n="cost.incentiveNote">
+          Note: Punjab DSR incentive of Rs 1,500/acre requires portal registration and may arrive with delay.
+        </p>
+        <div id="costLastVerified" style="font-size: 0.78rem; color: #888; margin-top: 6px;"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ASK AI (TIER 2 DEMO) -->
+    <section id="tab-chat" class="tab-pane" style="display: none;" role="tabpanel">
+      <div class="card">
+        <h2 class="card-title">
+          <span>🤖</span>
+          <span data-i18n="nav.chat">Ask AI Advisor</span>
+        </h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+          Grounded official PAU guidance. Never hallucinates; cites official pages and refers to your KVK officer.
+        </p>
+
+        <!-- Suggested quick queries -->
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+          <button type="button" class="btn-listen suggested-btn" data-q="When should I stop irrigation before harvest?">
+            🌾 When to stop water before harvest?
+          </button>
+          <button type="button" class="btn-listen suggested-btn" data-q="What are the rules for AWD in tillering stage?">
+            💧 AWD irrigation rule in tillering?
+          </button>
+          <button type="button" class="btn-listen suggested-btn" data-q="Can I do DSR in saline soil?">
+            ⚠️ Can I do DSR in saline soil?
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="chatInput" class="form-input" placeholder="Ask question in Punjabi, Hindi, or English..." />
+          <button type="button" class="btn-primary" id="btnSendChat" style="width: auto; padding: 0 20px;">
+            Ask
+          </button>
+        </div>
+
+        <div id="chatResponseBox" style="margin-top: 16px; display: none; padding: 14px; background: #f9fbf9; border: 1.5px solid var(--border); border-radius: 8px;">
+          <p id="chatResponseText" style="font-size: 1rem; line-height: 1.5; font-weight: 500;"></p>
+          <div id="chatSourcesText" style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"></div>
+        </div>
+
+        <div id="chatKvkNotice" class="kvk-badge" style="margin-top: 14px;"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

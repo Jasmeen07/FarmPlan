@@ -1,0 +1,145 @@
+{
+  "version": "2026-10",
+  "source": "Local Government Directory (LGD), Ministry of Panchayati Raj, Govt of India & ICAR-ATARI Zone 1",
+  "verified_on": "2026-10-23",
+  "districts": [
+    {
+      "lgd_code": "024",
+      "name": { "en": "Amritsar", "pa": "ਅੰਮ੍ਰਿਤਸਰ", "hi": "अमृतसर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Amritsar", "phone": "0183-2921500", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "604",
+      "name": { "en": "Barnala", "pa": "ਬਰਨਾਲਾ", "hi": "बरनाला" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Barnala", "phone": "01679-241512", "source": "GADVASU / PAU Extension" }
+    },
+    {
+      "lgd_code": "025",
+      "name": { "en": "Bathinda", "pa": "ਬਠਿੰਡਾ", "hi": "बठिंडा" },
+      "salinity_flag": "saline_risk",
+      "kvk_contact": { "name": "KVK Bathinda", "phone": "0164-2212159", "source": "PAU Regional Research Station" }
+    },
+    {
+      "lgd_code": "026",
+      "name": { "en": "Faridkot", "pa": "ਫ਼ਰੀਦਕੋਟ", "hi": "फरीदकोट" },
+      "salinity_flag": "saline_risk",
+      "kvk_contact": { "name": "KVK Faridkot", "phone": "01639-250325", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "027",
+      "name": { "en": "Fatehgarh Sahib", "pa": "ਫ਼ਤਹਿਗੜ੍ਹ ਸਾਹਿਬ", "hi": "फतेहगढ़ साहिब" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Fatehgarh Sahib", "phone": "01763-221217", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "651",
+      "name": { "en": "Fazilka", "pa": "ਫ਼ਾਜ਼ਿਲਕਾ", "hi": "फाज़िल्का" },
+      "salinity_flag": "saline_risk",
+      "kvk_contact": { "name": "KVK Fazilka", "phone": "01638-262100", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "028",
+      "name": { "en": "Ferozepur", "pa": "ਫ਼ਿਰੋਜ਼ਪੁਰ", "hi": "फिरोज़पुर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Ferozepur", "phone": "01632-242144", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "029",
+      "name": { "en": "Gurdaspur", "pa": "ਗੁਰਦਾਸਪੁਰ", "hi": "गुरदासपुर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Gurdaspur", "phone": "01874-220721", "source": "PAU Regional Research Station" }
+    },
+    {
+      "lgd_code": "030",
+      "name": { "en": "Hoshiarpur", "pa": "ਹੁਸ਼ਿਆਰਪੁਰ", "hi": "होशियारपुर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Hoshiarpur", "phone": "01882-255551", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "031",
+      "name": { "en": "Jalandhar", "pa": "ਜਲੰਧਰ", "hi": "जालंधर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Jalandhar", "phone": "0181-2253018", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "032",
+      "name": { "en": "Kapurthala", "pa": "ਕਪੂਰਥਲਾ", "hi": "कपूरथला" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Kapurthala", "phone": "01822-233056", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "033",
+      "name": { "en": "Ludhiana", "pa": "ਲੁਧਿਆਣਾ", "hi": "लुधियाना" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Ludhiana (Samrala)", "phone": "0161-2401960", "source": "PAU Campus" }
+    },
+    {
+      "lgd_code": "737",
+      "name": { "en": "Malerkotla", "pa": "ਮਲੇਰਕੋਟਲਾ", "hi": "मलेरकोटला" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Sangrur / Malerkotla", "phone": "01672-245100", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "034",
+      "name": { "en": "Mansa", "pa": "ਮਾਨਸਾ", "hi": "मानसा" },
+      "salinity_flag": "saline_risk",
+      "kvk_contact": { "name": "KVK Mansa", "phone": "01652-228020", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "035",
+      "name": { "en": "Moga", "pa": "ਮੋਗਾ", "hi": "मोगा" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Moga", "phone": "01636-235084", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "036",
+      "name": { "en": "Sri Muktsar Sahib", "pa": "ਸ੍ਰੀ ਮੁਕਤਸਰ ਸਾਹਿਬ", "hi": "श्री मुक्तसर साहिब" },
+      "salinity_flag": "saline_risk",
+      "kvk_contact": { "name": "KVK Muktsar", "phone": "01633-260333", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "652",
+      "name": { "en": "Pathankot", "pa": "ਪਠਾਨਕੋਟ", "hi": "पठानकोट" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Pathankot", "phone": "0186-2345000", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "037",
+      "name": { "en": "Patiala", "pa": "ਪਟਿਆਲਾ", "hi": "पटियाला" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Patiala (Rauni)", "phone": "0175-2210134", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "038",
+      "name": { "en": "Rupnagar", "pa": "ਰੂਪਨਗਰ", "hi": "रूपनगर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Rupnagar", "phone": "01881-220460", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "605",
+      "name": { "en": "SAS Nagar (Mohali)", "pa": "ਸਾਹਿਬਜ਼ਾਦਾ ਅਜੀਤ ਸਿੰਘ ਨਗਰ", "hi": "साहिबज़ादा अजीत सिंह नगर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Mohali", "phone": "0172-2212000", "source": "GADVASU Extension" }
+    },
+    {
+      "lgd_code": "039",
+      "name": { "en": "Sangrur", "pa": "ਸੰਗਰੂਰ", "hi": "संगरूर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Sangrur (Kheri)", "phone": "01672-245100", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "040",
+      "name": { "en": "SBS Nagar (Nawanshahr)", "pa": "ਸ਼ਹੀਦ ਭਗਤ ਸਿੰਘ ਨਗਰ", "hi": "शहीद भगत सिंह नगर" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Langroya (SBS Nagar)", "phone": "01823-241512", "source": "PAU Extension" }
+    },
+    {
+      "lgd_code": "606",
+      "name": { "en": "Tarn Taran", "pa": "ਤਰਨ ਤਾਰਨ", "hi": "तरन तारन" },
+      "salinity_flag": "unknown",
+      "kvk_contact": { "name": "KVK Tarn Taran (Booh)", "phone": "01852-255000", "source": "GADVASU Extension" }
+    }
+  ]
+}

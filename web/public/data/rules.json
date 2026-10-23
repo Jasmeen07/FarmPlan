@@ -1,0 +1,100 @@
+{
+  "version": "2026-10",
+  "source": {
+    "doc": "PAU Package of Practices for Kharif Crops: Rice Water Management & AWD",
+    "edition": "2024-2025",
+    "verified_by": "PAU Agronomy & Water Resources Department",
+    "verified_on": "2026-10-23"
+  },
+  "stages": [
+    {
+      "id": "establishment",
+      "water_rule": "shallow_water_moist",
+      "text": {
+        "en": "Keep shallow standing water (3-5 cm) for first 15 days after transplanting to help seedlings establish roots and prevent weed emergence. Do not allow the field to dry in this phase.",
+        "pa": "ਲੁਆਈ ਤੋਂ ਬਾਅਦ ਪਹਿਲੇ 15 ਦਿਨ ਖੇਤ ਵਿੱਚ ਹਲਕਾ ਪਾਣੀ (3-5 ਸੈਂ.ਮੀ.) ਖੜ੍ਹਾ ਰੱਖੋ ਤਾਂ ਜੋ ਪਨੀਰੀ ਦੀਆਂ ਜੜ੍ਹਾਂ ਲੱਗ ਸਕਣ ਅਤੇ ਨਦੀਨ ਨਾ ਉੱਗਣ। ਇਸ ਸਮੇਂ ਖੇਤ ਨੂੰ ਸੁੱਕਣ ਨਾ ਦਿਓ।",
+        "hi": "रोपाई के बाद पहले 15 दिन खेत में 3-5 सेमी हल्का पानी खड़ा रखें ताकि पौधों की जड़ें जम सकें और खरपतवार न उगें। इस चरण में खेत को सूखने न दें।"
+      },
+      "source_ref": { "doc": "PAU Kharif Guide", "page": "24", "section": "Irrigation Management in Transplanted Rice" },
+      "never_dry": false,
+      "warning_ids": []
+    },
+    {
+      "id": "tillering",
+      "water_rule": "awd",
+      "text": {
+        "en": "Apply Alternate Wetting and Drying (AWD). Let ponded water soak in and disappear from soil surface, wait 2 days until soil is firm but before hairline cracks appear, then irrigate with 5-7 cm water. Saves 15-30% water.",
+        "pa": "ਸੁਕਾ-ਸੁਕਾ ਕੇ ਪਾਣੀ ਲਾਓ (AWD ਤਕਨੀਕ)। ਖੇਤ ਦਾ ਖੜ੍ਹਾ ਪਾਣੀ ਜੀਰਨ ਤੋਂ 2 ਦਿਨ ਬਾਅਦ ਅਗਲਾ ਪਾਣੀ ਦਿਓ। ਜ਼ਮੀਨ ਵਿੱਚ ਤਰੇੜਾਂ ਨਾ ਪੈਣ ਦਿਓ। ਇਹ ਤਰੀਕਾ 15-30% ਪਾਣੀ ਬਚਾਉਂਦਾ ਹੈ ਅਤੇ ਜੜ੍ਹਾਂ ਮਜ਼ਬੂਤ ਕਰਦਾ ਹੈ।",
+        "hi": "सुखा-सुखाकर पानी दें (AWD तकनीक)। खेत का खड़ा पानी सूखने के 2 दिन बाद दोबारा पानी लगाएं। मिट्टी में दरारें न पड़ने दें। यह विधि 15-30% पानी बचाती है और जड़ों को मज़बूत करती है।"
+      },
+      "source_ref": { "doc": "PAU Kharif Guide", "page": "25", "section": "Water Saving through Alternate Wetting and Drying" },
+      "never_dry": false,
+      "warning_ids": []
+    },
+    {
+      "id": "panicle_initiation",
+      "water_rule": "keep_moist_no_stress",
+      "text": {
+        "en": "Panicle Initiation (Nissar): Rice is sensitive to water stress now. Do not allow the soil to dry out. Maintain saturated to shallow water condition. Irrigate immediately as surface water recedes.",
+        "pa": "ਗੋਭ ਦਾ ਸਮਾਂ (ਪੈਨੀਕਲ ਇਨੀਸ਼ੀਏਸ਼ਨ): ਫ਼ਸਲ ਪਾਣੀ ਦੀ ਘਾਟ ਪ੍ਰਤੀ ਬਹੁਤ ਸੰਵੇਦਨਸ਼ੀਲ ਹੈ। ਜ਼ਮੀਨ ਨੂੰ ਬਿਲਕੁਲ ਨਾ ਸੁੱਕਣ ਦਿਓ। ਖੇਤ ਵਿੱਚ ਹਲਕੀ ਸਿੱਲ੍ਹ ਜਾਂ ਪਤਲਾ ਪਾਣੀ ਬਣਾਈ ਰੱਖੋ।",
+        "hi": "गोभ की अवस्था (पैनिकल इनीशिएशन): फसल पानी की कमी के प्रति अत्यंत संवेदनशील है। खेत को बिल्कुल सूखने न दें। हल्का पानी या पर्याप्त नमी बनाए रखें।"
+      },
+      "source_ref": { "doc": "PAU Kharif Guide", "page": "25", "section": "Critical Irrigation Stages" },
+      "never_dry": true,
+      "warning_ids": []
+    },
+    {
+      "id": "flowering",
+      "water_rule": "keep_shallow_water",
+      "text": {
+        "en": "Flowering stage: CRITICAL. Maintain continuous shallow water (5 cm). Field must NEVER be allowed to dry during flowering and pollination; moisture stress will cause empty (chaffy) grains and severe yield loss.",
+        "pa": "ਬੂਰ ਪੈਣ ਦਾ ਸਮਾਂ (ਫ਼ਲਾਵਰਿੰਗ): ਬਹੁਤ ਨਾਜ਼ੁਕ ਪੜਾਅ। ਖੇਤ ਵਿੱਚ ਲਗਾਤਾਰ 5 ਸੈਂ.ਮੀ. ਪਾਣੀ ਖੜ੍ਹਾ ਰੱਖੋ। ਇਸ ਸਮੇਂ ਖੇਤ ਨੂੰ ਕਦੇ ਵੀ ਸੁੱਕਣ ਨਾ ਦਿਓ, ਨਹੀਂ ਤਾਂ ਝੋਨੇ ਵਿੱਚ ਫੋਕ ਪੈ ਜਾਵੇਗੀ ਅਤੇ ਝਾੜ ਬਹੁਤ ਘਟ ਜਾਵੇਗਾ।",
+        "hi": "फूल आने का समय (फ्लावरिंग): अति संवेदनशील अवस्था। खेत में लगातार 5 सेमी पानी खड़ा रखें। इस समय खेत को कभी न सूखने दें, अन्यथा दाने खाली (पोक) रह जाएंगे और पैदावार बुरी तरह गिरेगी।"
+      },
+      "source_ref": { "doc": "PAU Kharif Guide", "page": "26", "section": "Flowering & Grain Formation Water Rule" },
+      "never_dry": true,
+      "warning_ids": ["flowering_never_dry"]
+    },
+    {
+      "id": "grain_filling",
+      "water_rule": "intermittent_irrigation",
+      "text": {
+        "en": "Grain filling (Doodha / Pakaav): Apply light irrigation when standing water subsides. Avoid prolonged deep flooding. Maintain adequate soil moisture for plump grain development.",
+        "pa": "ਦੋਧੇ ਦਾ ਸਮਾਂ ਅਤੇ ਦਾਣਾ ਪੱਕਣਾ: ਪਾਣੀ ਜੀਰਨ 'ਤੇ ਹਲਕਾ ਪਾਣੀ ਲਾਓ। ਡੂੰਘਾ ਪਾਣੀ ਖੜ੍ਹਾ ਕਰਨ ਦੀ ਲੋੜ ਨਹੀਂ। ਦਾਣੇ ਦੀ ਸਹੀ ਭਰਾਈ ਲਈ ਸਿੱਲ੍ਹ ਕਾਇਮ ਰੱਖੋ।",
+        "hi": "दुग्ध अवस्था व दाना भराव: पानी सूखने पर हल्की सिंचाई करें। गहरा पानी खड़ा रखने की ज़रूरत नहीं है। दाने के अच्छे भराव के लिए नमी बनाए रखें।"
+      },
+      "source_ref": { "doc": "PAU Kharif Guide", "page": "26", "section": "Grain Filling Water Management" },
+      "never_dry": false,
+      "warning_ids": []
+    },
+    {
+      "id": "pre_harvest",
+      "water_rule": "stop_irrigation",
+      "text": {
+        "en": "Pre-harvest withdrawal: Stop all irrigation 14 to 15 days before expected harvesting. This ensures uniform maturity, hardens the field for combine harvester movement, and prevents grain discoloration.",
+        "pa": "ਕਟਾਈ ਤੋਂ ਪਹਿਲਾਂ ਪਾਣੀ ਬੰਦ ਕਰਨਾ: ਕੰਬਾਈਨ ਨਾਲ ਵਾਢੀ ਤੋਂ 14-15 ਦਿਨ ਪਹਿਲਾਂ ਪਾਣੀ ਪੂਰੀ ਤਰ੍ਹਾਂ ਬੰਦ ਕਰ ਦਿਓ। ਇਸ ਨਾਲ ਫ਼ਸਲ ਇਕਸਾਰ ਪੱਕਦੀ ਹੈ, ਜ਼ਮੀਨ ਕੰਬਾਈਨ ਲਈ ਪੱਕ ਜਾਂਦੀ ਹੈ ਅਤੇ ਦਾਣਾ ਖ਼ਰਾਬ ਨਹੀਂ ਹੁੰਦਾ।",
+        "hi": "कटाई पूर्व सिंचाई बंद करना: कटाई से 14-15 दिन पहले पानी पूरी तरह बंद कर दें। इससे फसल एकसमान पकती है, खेत कंबाइन चलने लायक सख्त हो जाता है और दाने की चमक बनी रहती है।"
+      },
+      "source_ref": { "doc": "PAU Kharif Guide", "page": "27", "section": "Pre-Harvest Irrigation Termination" },
+      "never_dry": false,
+      "warning_ids": []
+    }
+  ],
+  "warnings": {
+    "saline_no_awd": {
+      "en": "Saline soil or water detected: AWD (drying soil) brings subsoil salts to the root zone. Keep field continuously moist/submerged to dilute salts.",
+      "pa": "ਕੱਲਰੀ ਜ਼ਮੀਨ ਜਾਂ ਖਾਰਾ ਪਾਣੀ: ਸੁਕਾ ਕੇ ਪਾਣੀ ਦੇਣ ਨਾਲ ਲੂਣ ਜੜ੍ਹਾਂ ਕੋਲ ਆ ਜਾਂਦਾ ਹੈ। ਖੇਤ ਵਿੱਚ ਲਗਾਤਾਰ ਸਿੱਲ੍ਹ/ਪਾਣੀ ਰੱਖੋ।",
+      "hi": "कल्लर या खारा पानी: सुखाकर पानी देने से लवण जड़ों के पास जमा हो जाते हैं। खेत में निरंतर नमी या हल्का पानी बनाए रखें।"
+    },
+    "flowering_never_dry": {
+      "en": "CRITICAL: Crop is in flowering. Never allow drying! Standing water required.",
+      "pa": "ਜ਼ਰੂਰੀ ਚੇਤਾਵਨੀ: ਫ਼ਸਲ ਬੂਰ 'ਤੇ ਹੈ। ਖੇਤ ਨੂੰ ਸੁੱਕਣ ਨਾ ਦਿਓ! ਪਾਣੀ ਖੜ੍ਹਾ ਰੱਖਣਾ ਲਾਜ਼ਮੀ ਹੈ।",
+      "hi": "अति आवश्यक: फसल फूल पर है। खेत को कभी सूखने न दें! पानी खड़ा रखना अनिवार्य है।"
+    },
+    "stage_approximate": {
+      "en": "Notice: Crop stage is calculated approximately. Observe panicle emergence in field.",
+      "pa": "ਸੂਚਨਾ: ਫ਼ਸਲ ਦਾ ਪੜਾਅ ਅੰਦਾਜ਼ਨ ਹੈ। ਖੇਤ ਵਿੱਚ ਨਿਸਾਰੇ ਨੂੰ ਧਿਆਨ ਨਾਲ ਦੇਖੋ।",
+      "hi": "सूचना: फसल का चरण अनुमानित है। खेत में बालियां निकलने का निरीक्षण करें।"
+    }
+  }
+}
