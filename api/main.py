@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from rag.retrieve import retriever
 from rag.generate import generate_grounded_answer
 from rag.validate import numbers_supported
+from rag.conversation import detect_conversational_intent, contextualize_followup
 from vision.diagnose import analyze_image_bytes
 
 app = FastAPI(title="FarmPlan API", version="2.0.0")
@@ -32,6 +33,7 @@ FALLBACK_MESSAGES = {
 
 class AskRequest(BaseModel):
     question: str = Field(..., max_length=500, description="Farmer's query")
+    history: list[dict] = Field(default=[], description="Conversation history turns")
     lang: str = Field("en", description="Language code: pa, hi, or en")
     district: str | None = Field(None, description="Optional district code")
 
@@ -44,8 +46,16 @@ def ask(req: AskRequest):
     if len(req.question.strip()) == 0:
         raise HTTPException(status_code=400, detail="Empty question")
 
-    # 1. Retrieve official passages
-    passages = retriever.retrieve(req.question, k=3, min_score=0.02)
+    # 1. Check conversational pleasantries (Hi, Hello, Sat Sri Akal, Thanks, Who are you)
+    conv_response = detect_conversational_intent(req.question, lang=req.lang)
+    if conv_response:
+        return conv_response
+
+    # 2. Contextualize follow-up questions from conversation history
+    query_to_search = contextualize_followup(req.question, req.history)
+
+    # 3. Retrieve official passages
+    passages = retriever.retrieve(query_to_search, k=3, min_score=0.02)
 
     if not passages:
         return {
@@ -55,7 +65,7 @@ def ask(req: AskRequest):
             "reason": "no_relevant_passages"
         }
 
-    # 2. Generate answer
+    # 4. Generate answer
     raw_answer = generate_grounded_answer(req.question, passages, lang=req.lang)
 
     if raw_answer.strip() == "NO_ANSWER":

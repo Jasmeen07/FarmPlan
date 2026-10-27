@@ -11,7 +11,7 @@ import { adviceFor } from "./rules.js";
 import { dsrGate } from "./dsrGate.js";
 import { costs, breakEvenQuintals } from "./cost.js";
 import { getStoredState, saveStoredState } from "./state.js";
-import { searchChunks } from "./ragClient.js";
+import { searchChunks, detectConversationalIntent } from "./ragClient.js";
 import { inspectImageLocally } from "./visionClient.js";
 
 // Global data state
@@ -684,57 +684,133 @@ function initListeningRoom() {
   }
 }
 
+const chatHistory = [];
+
+function escapeHtml(str) {
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function executeAdvisorQuery(query) {
   if (!query || !query.trim()) return;
 
-  const card = document.getElementById("advisorAnswerCard");
-  const textEl = document.getElementById("advisorAnswerText");
-  const sourceEl = document.getElementById("advisorSourceText");
+  const chatFeed = document.getElementById("advisorChatFeed");
+  const queryInput = document.getElementById("askQueryInput");
+  if (queryInput) queryInput.value = "";
 
-  card.style.display = "block";
-  textEl.textContent = "Consulting official guidance...";
-  sourceEl.textContent = "Searching PAU package of practices...";
+  // 1. Append farmer's message to chat feed
+  chatHistory.push({ role: "user", content: query });
+  if (chatFeed) {
+    const userTurn = document.createElement("div");
+    userTurn.className = "chat-turn farmer-turn";
+    userTurn.innerHTML = `
+      <div class="turn-content">
+        <p class="turn-text">${escapeHtml(query)}</p>
+      </div>
+      <div class="turn-avatar">🧑‍🌾</div>
+    `;
+    chatFeed.appendChild(userTurn);
 
-  // 1. Attempt to call local FastAPI backend
+    // Typing placeholder
+    const typingTurn = document.createElement("div");
+    typingTurn.id = "advisorTypingIndicator";
+    typingTurn.className = "chat-turn advisor-turn";
+    typingTurn.innerHTML = `
+      <div class="turn-avatar">🌾</div>
+      <div class="turn-content">
+        <p class="turn-text" style="opacity: 0.7;"><em>Thinking & consulting official guidance...</em></p>
+      </div>
+    `;
+    chatFeed.appendChild(typingTurn);
+    chatFeed.scrollTop = chatFeed.scrollHeight;
+  }
+
+  let answerText = "";
+  let sourceText = "Punjab Agricultural University Extension Advisory";
+
+  // Check client conversational intent (handles "hi", "hello", "thanks", "who are you")
+  const localConv = detectConversationalIntent(query);
+
+  // 2. Attempt to call local FastAPI backend with conversation history
   try {
     const res = await fetch("http://127.0.0.1:8000/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: query, lang: "en" }),
+      body: JSON.stringify({ question: query, history: chatHistory, lang: "en" }),
     });
 
     if (res.ok) {
       const data = await res.json();
       if (data.grounded) {
-        textEl.textContent = data.answer;
+        answerText = data.answer;
         if (data.sources && data.sources.length > 0) {
-          sourceEl.textContent = `${data.sources[0].title} (${data.sources[0].section}, p. ${data.sources[0].page || "N/A"})`;
-        } else {
-          sourceEl.textContent = "Punjab Agricultural University Extension Advisory";
+          sourceText = `${data.sources[0].title} (${data.sources[0].section || 'Guidance'}, p. ${data.sources[0].page || "N/A"})`;
         }
-        card.scrollIntoView({ behavior: "smooth" });
-        return;
       }
     }
   } catch (err) {
-    // Backend offline or unreachable; fall through to browser-side RAG engine
+    // Backend offline; fall through to local engine
   }
 
-  // 2. Client-Side Grounded RAG Search (Handles ANY question over all 22 official PAU chunks)
-  if (pauChunksData && pauChunksData.length > 0) {
-    const match = searchChunks(query, pauChunksData);
-    if (match) {
-      textEl.textContent = match.answer;
-      sourceEl.textContent = match.source;
-      card.scrollIntoView({ behavior: "smooth" });
-      return;
+  // 3. Fallback to client-side RAG or conversational engine
+  if (!answerText) {
+    if (localConv) {
+      answerText = localConv.answer;
+      sourceText = localConv.source;
+    } else if (pauChunksData && pauChunksData.length > 0) {
+      const match = searchChunks(query, pauChunksData);
+      if (match) {
+        answerText = match.answer;
+        sourceText = match.source;
+      }
     }
   }
 
-  // 3. Safe Referral if query is off-topic or unverifiable
-  textEl.textContent = "I do not have a verified answer for this specific query in the current official Punjab guidance. Please contact your local Block Agriculture Officer or Krishi Vigyan Kendra (KVK) specialist for reliable local guidance.";
-  sourceEl.textContent = "Official Punjab Extension Protocol: Safe Referral";
-  card.scrollIntoView({ behavior: "smooth" });
+  if (!answerText) {
+    answerText = "I do not have a verified answer for this specific query in the current official Punjab guidance. Please contact your local Block Agriculture Officer or Krishi Vigyan Kendra (KVK) specialist for reliable local guidance.";
+    sourceText = "Official Punjab Extension Protocol: Safe Referral";
+  }
+
+  chatHistory.push({ role: "assistant", content: answerText });
+
+  // 4. Replace typing indicator with Advisor response bubble
+  if (chatFeed) {
+    const typingIndicator = document.getElementById("advisorTypingIndicator");
+    if (typingIndicator) typingIndicator.remove();
+
+    const advisorTurn = document.createElement("div");
+    advisorTurn.className = "chat-turn advisor-turn";
+    advisorTurn.innerHTML = `
+      <div class="turn-avatar">🌾</div>
+      <div class="turn-content">
+        <div class="turn-header">
+          <span class="turn-badge">FarmPlan Advisor</span>
+          <button type="button" class="btn-listen-turn" title="Listen to this advice">
+            🔊 <span>Listen</span>
+          </button>
+        </div>
+        <p class="turn-text">${escapeHtml(answerText)}</p>
+        <div class="turn-source"><strong>Source:</strong> ${escapeHtml(sourceText)}</div>
+      </div>
+    `;
+
+    const listenBtn = advisorTurn.querySelector(".btn-listen-turn");
+    if (listenBtn) {
+      listenBtn.addEventListener("click", () => {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(answerText);
+        u.lang = "en-IN";
+        window.speechSynthesis.speak(u);
+      });
+    }
+
+    chatFeed.appendChild(advisorTurn);
+    chatFeed.scrollTop = chatFeed.scrollHeight;
+  }
 }
 
 /* ======================================================== */

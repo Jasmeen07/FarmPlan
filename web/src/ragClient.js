@@ -198,3 +198,41 @@ export function searchChunks(query, chunks, minScore = 0.02) {
     source: `${bestChunk.title} (${bestChunk.section}, p. ${bestChunk.page})`
   };
 }
+
+export function detectConversationalIntent(query) {
+  if (!query) return null;
+  const q = query.trim().toLowerCase();
+
+  const greetingRegex = /^(hi|hello|hey|sat\s*sri\s*akal|sasrikaal|satsriakal|namaste|namaskar|good\s*(morning|afternoon|evening)|ki\s*haal|kiddan|kaise\s*ho)\b/i;
+  const thanksRegex = /\b(thank\s*you|thanks|thx|dhanyawad|shukriya|meharbani|very\s*helpful|great)\b/i;
+  const identityRegex = /\b(who\s*are\s*you|what\s*are\s*you|what\s*can\s*you\s*do|help\s*me|what\s*is\s*farmplan|how\s*to\s*use)\b/i;
+
+  if (greetingRegex.test(q)) {
+    // If combined with an agricultural question (e.g. "Hi, how to apply urea?"), let RAG search it
+    const rem = q.replace(greetingRegex, "").trim();
+    if (rem.length > 8 && /(water|urea|spray|weed|pest|dsr|seed|disease|fertilizer|khad)/.test(rem)) {
+      return null;
+    }
+    return {
+      answer: "Sat Sri Akal! Welcome to FarmPlan. I am your water and paddy advisory assistant. How is your crop doing today? You can ask me about watering schedules (AWD), fertilizer doses, weed control, pests, rice varieties like PR 126, or direct seeding (DSR).",
+      source: "FarmPlan Conversational Guide (Farmer Interaction)"
+    };
+  }
+
+  if (thanksRegex.test(q) && q.split(/\s+/).length <= 6) {
+    return {
+      answer: "You are very welcome! Wishing you a healthy and water-smart harvest. Feel free to ask anytime you need official guidance for your field.",
+      source: "FarmPlan Conversational Guide (Farmer Interaction)"
+    };
+  }
+
+  if (identityRegex.test(q)) {
+    return {
+      answer: "I am FarmPlan, an agronomic assistant grounded strictly in Punjab Agricultural University (PAU) research. I help farmers practice Alternate Wetting and Drying (AWD), evaluate Direct-Seeded Rice (DSR) economics, identify crop leaf issues, and answer questions without hallucinations.",
+      source: "FarmPlan System Overview (About FarmPlan)"
+    };
+  }
+
+  return null;
+}
+
