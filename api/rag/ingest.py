@@ -17,7 +17,7 @@ PAU_KHARIF_PASSAGES = [
         "lang": "en",
         "region": "punjab",
         "page": 24,
-        "section": "Establishment Stage",
+        "section": "Establishment Stage Water Management",
         "text": "For the first 15 days after transplanting, keep 3 to 5 cm shallow standing water in the field. This prevents drying of nursery seedling roots, suppresses early weed germination, and ensures rapid tillering."
     },
     {
@@ -91,6 +91,123 @@ PAU_KHARIF_PASSAGES = [
         "page": 40,
         "section": "Zinc and Iron Deficiency Management",
         "text": "Zinc deficiency causes khaira disease with rusty brown pigmentation on lower leaves 2 to 3 weeks after transplanting. Broadcast 25 kg zinc sulphate heptahydrate 21 percent per acre. For iron deficiency in DSR appearing as yellowing of young leaves, spray 1 percent ferrous sulphate (1 kg ferrous sulphate in 100 litres of water) 2 to 3 times at weekly intervals."
+    },
+    {
+        "doc_id": "pau_kharif_varieties_2025",
+        "title": "PAU Recommended Paddy Varieties",
+        "lang": "en",
+        "region": "punjab",
+        "page": 12,
+        "section": "Short vs Long Duration Varieties",
+        "text": "PR 126 is a short-duration variety maturing in 93 days after transplanting (123 days from seeding). It saves 20 to 25 percent water and produces 30 quintals per acre. PR 131 matures in 110 days with high yield and lodging tolerance. PR 128 matures in 111 days. Pusa 44 is strongly unrecommended by Punjab Government due to its long 130-day duration, massive groundwater depletion, and late harvest that exacerbates stubble burning."
+    },
+    {
+        "doc_id": "pau_kharif_sowing_dates_2025",
+        "title": "Punjab Subsoil Water Act: Sowing & Transplanting Windows",
+        "lang": "en",
+        "region": "punjab",
+        "page": 8,
+        "section": "District Zones and Legal Transplanting Dates",
+        "text": "Under the Punjab Preservation of Subsoil Water Act, nursery sowing starts after May 15 for DSR and May 20 for nursery. Transplanting dates: Zone 1 (Bathinda, Faridkot, Fazilka, Ferozepur, Mansa, Sri Muktsar Sahib) begins on June 11. Zone 2 (central and northern districts including Ludhiana, Jalandhar, Amritsar, Patiala, Sangrur) begins on June 20. Transplanting before official notification is legally prohibited to curb summer groundwater depletion."
+    },
+    {
+        "doc_id": "pau_kharif_nursery_2025",
+        "title": "PAU Package of Practices: Nursery Management",
+        "lang": "en",
+        "region": "punjab",
+        "page": 18,
+        "section": "Seed Rate and Treatment for Nursery",
+        "text": "For transplanting one acre of paddy, sow 8 kg certified seed in 1 marla (25 square metres) nursery area. Treat seed by soaking in a solution of 10 g carbendazim 50 WP and 1 g streptocycline in 10 litres water for 8 to 10 hours. Transplant 25 to 30 day old seedlings at 2 to 3 seedlings per hill with 20 by 15 cm spacing (33 hills per square metre)."
+    },
+    {
+        "doc_id": "pau_kharif_fertilizer_2025",
+        "title": "PAU Package of Practices: Fertilizer Management",
+        "lang": "en",
+        "region": "punjab",
+        "page": 21,
+        "section": "Urea and Nitrogen Application Splits",
+        "text": "For medium fertility soils, apply 110 kg urea (50 kg N) per acre for short varieties like PR 126 and 130 kg urea for medium varieties in three equal splits: one-third at puddling, one-third at 21 days, and one-third at 42 days after transplanting. Do not apply urea after panicle initiation. Apply 27 kg DAP or 75 kg single superphosphate if soil test shows low phosphorus."
+    },
+    {
+        "doc_id": "pau_kharif_weeds_transplant_2025",
+        "title": "PAU Weed Control in Transplanted Rice",
+        "lang": "en",
+        "region": "punjab",
+        "page": 28,
+        "section": "Pre-emergence and Post-emergence Herbicides",
+        "text": "Apply pretilachlor 50 EC at 600 ml per acre or butachlor 50 EC at 1200 ml per acre mixed with 60 kg sand within 2 to 3 days of transplanting in 4 to 5 cm standing water. For control of swank and motha after weed emergence (20 to 25 days), spray bispyribac-sodium 10 SC at 100 ml per acre dissolved in 150 litres of water."
+    },
+    {
+        "doc_id": "pau_kharif_pest_bph_2025",
+        "title": "PAU Insect Pest Management: Brown Plant Hopper",
+        "lang": "en",
+        "region": "punjab",
+        "page": 50,
+        "section": "Brown Plant Hopper (BPH) & Hopper Burn",
+        "text": "Brown plant hoppers suck sap from tiller bases, turning crops brown and dry in circular patches called hopper burn. To prevent BPH: practice AWD (intermittent drying keeps humidity low), leave 30 cm alleyways every 3 metres, and do not over-apply urea. If hoppers exceed 5 per hill, spray triflumezopyrim 10 SC at 94 ml per acre or pymetrozine 50 WG at 120 g per acre."
+    },
+    {
+        "doc_id": "pau_kharif_pest_leaf_folder_2025",
+        "title": "PAU Insect Pest Management: Leaf Folder",
+        "lang": "en",
+        "region": "punjab",
+        "page": 53,
+        "section": "Leaf Folder Threshold and Spray",
+        "text": "Leaf folder caterpillars fold rice leaves longitudinally and feed on green tissues inside, producing white translucent streaks. Only spray if damaged leaves exceed the economic threshold of 10 percent. Apply flubendiamide 39.35 SC at 20 ml per acre or chlorantraniliprole 18.5 SC at 60 ml per acre in 100 litres of water."
+    },
+    {
+        "doc_id": "pau_kharif_disease_blast_2025",
+        "title": "PAU Disease Management: Rice Blast",
+        "lang": "en",
+        "region": "punjab",
+        "page": 46,
+        "section": "Leaf and Neck Blast Symptoms and Control",
+        "text": "Rice blast produces spindle-shaped spots with ash-grey centers and dark brown margins. When neck blast strikes, the panicle base rots, turning black and breaking. At initial symptom appearance on upper leaves, spray tricyclazole 75 WP at 120 g per acre or azoxystrobin 18.2 plus difenoconazole 11.4 SC at 200 ml per acre in 200 litres water."
+    },
+    {
+        "doc_id": "pau_kharif_disease_blb_2025",
+        "title": "PAU Disease Management: Bacterial Leaf Blight",
+        "lang": "en",
+        "region": "punjab",
+        "page": 48,
+        "section": "Bacterial Blight Cultural Control",
+        "text": "Bacterial Leaf Blight (BLB) shows water-soaked lesions starting at leaf margins and progressing as undulating yellow stripes. When BLB appears, immediately stop urea top-dressing and drain standing water from the field for 2 to 3 days to aerate the soil. Chemical sprays and antibiotics are ineffective and not recommended; cultural control is key."
+    },
+    {
+        "doc_id": "pau_kharif_disease_sheath_2025",
+        "title": "PAU Disease Management: Sheath Blight",
+        "lang": "en",
+        "region": "punjab",
+        "page": 47,
+        "section": "Sheath Blight Management",
+        "text": "Sheath blight causes greyish-green serpentine lesions on leaf sheaths just above the water level under warm humid weather and high plant density. Practice AWD drying intervals to lower humidity. If disease spreads to upper third of plant, spray hexaconazole 5 EC at 200 ml per acre or azoxystrobin 23 SC at 200 ml per acre."
+    },
+    {
+        "doc_id": "pau_kharif_soil_texture_2025",
+        "title": "PAU Agronomy: Soil Texture & Irrigation Percolation",
+        "lang": "en",
+        "region": "punjab",
+        "page": 22,
+        "section": "Soil Texture Impact on AWD and DSR",
+        "text": "In heavy clay soils (Dakar), water percolation is slow, so 2 days drying after standing water infiltration is optimal. In medium loam soils (Mera), 1 to 2 days drying is safe. In light sandy soils (Raitli), AWD must be practiced with caution with only 1 day drying because water drains very fast and cracks can appear rapidly. DSR is not recommended on sandy soils."
+    },
+    {
+        "doc_id": "pau_kharif_stubble_2025",
+        "title": "PAU In-Situ Paddy Residue Management",
+        "lang": "en",
+        "region": "punjab",
+        "page": 60,
+        "section": "Happy Seeder & Crop Stubble",
+        "text": "Do not burn paddy straw. Direct drilling of wheat using the Happy Seeder or Smart Seeder into standing rice residue without prior tillage conserves 1 irrigation, suppresses weeds, retains soil moisture, and adds 15 to 20 kg nitrogen per acre back into the soil over time."
+    },
+    {
+        "doc_id": "pau_kharif_irrigation_cost_2025",
+        "title": "PAU Cost of Cultivation Studies",
+        "lang": "en",
+        "region": "punjab",
+        "page": 65,
+        "section": "Tubewell Pumping Costs and AWD Savings",
+        "text": "Operating an agricultural tubewell (submersible or monoblock) or diesel engine costs approximately 400 to 500 rupees per irrigation cycle per acre in diesel and equipment maintenance. Conventional transplanted paddy consumes 26 irrigations (approx 11,700 rupees). AWD cuts irrigations to 19, saving 3,150 to 3,500 rupees per acre in pumping expenses alone."
     }
 ]
 

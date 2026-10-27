@@ -1687,6 +1687,16 @@ h1, h2, h3, h4 {
   color: #2e7d32;
 }
 
+.confidence-badge.badge-medium {
+  background: #fff8e1;
+  color: #b78103;
+}
+
+.confidence-badge.badge-low {
+  background: #ffebee;
+  color: #c62828;
+}
+
 .diag-section {
   font-size: 0.9rem;
   margin-bottom: 12px;
@@ -1821,6 +1831,130 @@ h1, h2, h3, h4 {
 
 .m-icon {
   font-size: 1.2rem;
+}
+
+/* Interactive Dynamic Additions */
+.water-quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(220, 228, 210, 0.2);
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.water-quick-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--soft-gold);
+}
+
+.water-quick-input, .water-quick-select {
+  background: rgba(32, 58, 44, 0.9);
+  color: #fff;
+  border: 1px solid rgba(220, 228, 210, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.water-quick-select option {
+  background: #203A2C;
+  color: #fff;
+}
+
+.btn-sync-stage {
+  background: var(--soft-gold);
+  color: var(--forest-ink);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-sync-stage:hover {
+  background: #ecd580;
+}
+
+/* Yield Slider & Dynamic Net Advantage */
+.yield-slider-wrap {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(42, 90, 117, 0.3);
+}
+
+.yield-slider-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--forest-ink);
+  margin-bottom: 6px;
+}
+
+.yield-range-input {
+  width: 100%;
+  accent-color: var(--water-blue);
+  cursor: pointer;
+}
+
+.yield-net-banner {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.yield-net-banner.advantage-positive {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+}
+
+.yield-net-banner.advantage-neutral {
+  background: #fff8e1;
+  color: #f57f17;
+  border: 1px solid #ffe082;
+}
+
+.yield-net-banner.advantage-negative {
+  background: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ef9a9a;
+}
+
+.acreage-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: #4b5e52;
+}
+
+/* Diagnostic Metrics Box */
+.diag-metrics-box {
+  background: #f7f9f6;
+  border: 1px solid #d4ded0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.82rem;
+  color: #2e4335;
+  line-height: 1.5;
+}
+
+.diag-metrics-box strong {
+  color: var(--forest-ink);
 }
 
 /* Responsive Media Queries */

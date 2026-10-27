@@ -232,6 +232,27 @@
           </div>
         </div>
 
+        <!-- Quick Field Settings Bar -->
+        <div class="water-quick-bar">
+          <span class="water-quick-label">⚡ Field Setup:</span>
+          <div>
+            <label for="waterQuickSowingDate" style="font-size: 0.75rem; color: #dce4d2; margin-right: 4px;">Sowing / Transplant:</label>
+            <input type="date" id="waterQuickSowingDate" class="water-quick-input" title="Change your crop sowing or transplanting date" />
+          </div>
+          <div>
+            <label for="waterQuickVariety" style="font-size: 0.75rem; color: #dce4d2; margin-right: 4px;">Variety:</label>
+            <select id="waterQuickVariety" class="water-quick-select" title="Select your rice variety"></select>
+          </div>
+          <div>
+            <label for="waterQuickSaline" style="font-size: 0.75rem; color: #dce4d2; margin-right: 4px;">Soil / Water:</label>
+            <select id="waterQuickSaline" class="water-quick-select">
+              <option value="no">Normal soil & sweet water</option>
+              <option value="yes">Saline / Kallar land or tube-well</option>
+            </select>
+          </div>
+          <button type="button" id="btnSyncCurrentDay" class="btn-sync-stage" title="Recalculate today's active stage from sowing date">Recalculate Stage</button>
+        </div>
+
         <!-- Horizontal Crop Stage Timeline -->
         <div class="timeline-container">
           <div class="stage-timeline" role="tablist" aria-label="Crop Stage Progression">
@@ -448,6 +469,25 @@
               <div class="be-stat" id="ledgerBreakEvenStat">3.03 q/acre</div>
               <div class="be-desc" id="ledgerBreakEvenDesc">
                 DSR saves ₹7,030/acre. It remains more profitable than transplanting unless weed pressure causes a yield loss exceeding 3.03 quintals/acre.
+              </div>
+
+              <!-- Interactive Yield Difference Slider -->
+              <div class="yield-slider-wrap">
+                <div class="yield-slider-header">
+                  <span>Expected DSR Yield Difference:</span>
+                  <strong id="yieldDeltaVal">0.0 q/acre</strong>
+                </div>
+                <input type="range" id="dsrYieldSlider" class="yield-range-input" min="-6" max="3" step="0.5" value="0" />
+                
+                <div class="acreage-input-row">
+                  <label for="dsrAcreageInput">Farm Size:</label>
+                  <input type="number" id="dsrAcreageInput" min="1" max="100" value="1" class="form-input-sm" style="width: 70px; padding: 3px 6px;" />
+                  <span>acres</span>
+                </div>
+
+                <div class="yield-net-banner advantage-positive" id="yieldNetBanner">
+                  Net Advantage: <strong>+₹7,030/acre</strong> (₹7,030 total for 1 acre)
+                </div>
               </div>
             </div>
           </div>
@@ -723,6 +763,9 @@
                 </div>
                 <div class="confidence-badge badge-high" id="diagConfidenceBadge">High Confidence</div>
               </div>
+
+              <!-- Computer Vision Quantitative Metrics Readout -->
+              <div class="diag-metrics-box" id="diagMetricsBox" style="display: none;"></div>
 
               <div class="diag-section">
                 <strong>Symptoms to verify:</strong>

@@ -4,13 +4,14 @@ FastAPI backend for FarmPlan v2 (Tier 2 Grounded RAG Assistant).
 All operations are 100% free of cost, locally run, with strict safety validations.
 """
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from rag.retrieve import retriever
 from rag.generate import generate_grounded_answer
 from rag.validate import numbers_supported
+from vision.diagnose import analyze_image_bytes
 
 app = FastAPI(title="FarmPlan API", version="2.0.0")
 
@@ -88,6 +89,22 @@ def ask(req: AskRequest):
         "answer": raw_answer,
         "sources": sources
     }
+
+@app.post("/diagnose")
+async def diagnose(file: UploadFile = File(...)):
+    """
+    Tier 3: Analyzes an uploaded paddy leaf image for common issues,
+    blur, and non-plant content. Returns structured agronomic diagnosis.
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Uploaded file is not an image")
+    
+    contents = await file.read()
+    if len(contents) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image file too large (max 15MB)")
+        
+    result = analyze_image_bytes(contents)
+    return result
 
 if __name__ == "__main__":
     import uvicorn

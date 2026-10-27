@@ -2,6 +2,8 @@
  * web/src/main.js
  * Master Client-Side Controller for FarmPlan (5-Page English Implementation)
  * Aligned with FarmPlan_Antigravity_Design_Build_Brief.docx
+ * Fully dynamic: real stage calculation, dynamic AWD rules, DSR yield slider,
+ * grounded RAG Q&A, and real computer vision leaf inspection ($0 cost).
  */
 
 import { currentStage } from "./stage.js";
@@ -9,6 +11,8 @@ import { adviceFor } from "./rules.js";
 import { dsrGate } from "./dsrGate.js";
 import { costs, breakEvenQuintals } from "./cost.js";
 import { getStoredState, saveStoredState } from "./state.js";
+import { searchChunks } from "./ragClient.js";
+import { inspectImageLocally } from "./visionClient.js";
 
 // Global data state
 let districtsData = null;
@@ -16,6 +20,7 @@ let varietiesData = null;
 let rulesData = null;
 let costDefaultsData = null;
 let seasonConfigData = null;
+let pauChunksData = null;
 
 // User field configuration state
 const fieldState = {
@@ -44,12 +49,13 @@ let isListening = false;
 /* ======================================================== */
 async function loadData() {
   try {
-    const [districtsRes, varietiesRes, rulesRes, costRes, seasonRes] = await Promise.all([
+    const [districtsRes, varietiesRes, rulesRes, costRes, seasonRes, chunksRes] = await Promise.all([
       fetch("./data/districts.json"),
       fetch("./data/varieties.json"),
       fetch("./data/rules.json"),
       fetch("./data/cost_defaults.json"),
       fetch("./data/season_config.json"),
+      fetch("./data/pau_chunks.json"),
     ]);
 
     districtsData = await districtsRes.json();
@@ -57,6 +63,7 @@ async function loadData() {
     rulesData = await rulesRes.json();
     costDefaultsData = await costRes.json();
     seasonConfigData = await seasonRes.json();
+    pauChunksData = await chunksRes.json();
 
     activeCostParams = JSON.parse(JSON.stringify(costDefaultsData.items));
   } catch (err) {
@@ -109,7 +116,53 @@ function initWaterAdvisor() {
   d.setDate(d.getDate() - 28);
   fieldState.sowingDate = d.toISOString().slice(0, 10);
 
-  // Setup Timeline Node clicks
+  // Setup Quick Field Setup Bar
+  const quickDate = document.getElementById("waterQuickSowingDate");
+  const quickVariety = document.getElementById("waterQuickVariety");
+  const quickSaline = document.getElementById("waterQuickSaline");
+  const btnSync = document.getElementById("btnSyncCurrentDay");
+
+  if (quickVariety && varietiesData) {
+    quickVariety.innerHTML = "";
+    varietiesData.varieties.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = `${v.name.en} (${v.duration_days.total_seed_to_seed} days)`;
+      if (v.id === fieldState.varietyId) opt.selected = true;
+      quickVariety.appendChild(opt);
+    });
+  }
+
+  if (quickDate) {
+    quickDate.value = fieldState.sowingDate;
+    quickDate.addEventListener("change", (e) => {
+      fieldState.sowingDate = e.target.value;
+      recalculateAndSelectCurrentStage();
+    });
+  }
+
+  if (quickVariety) {
+    quickVariety.addEventListener("change", (e) => {
+      fieldState.varietyId = e.target.value;
+      recalculateAndSelectCurrentStage();
+    });
+  }
+
+  if (quickSaline) {
+    quickSaline.value = fieldState.salinity;
+    quickSaline.addEventListener("change", (e) => {
+      fieldState.salinity = e.target.value;
+      updateAtlasDisplay(fieldState.activeStageId);
+    });
+  }
+
+  if (btnSync) {
+    btnSync.addEventListener("click", () => {
+      recalculateAndSelectCurrentStage();
+    });
+  }
+
+  // Setup Timeline Node clicks (allows browsing future or past stages)
   const timelineNodes = document.querySelectorAll(".timeline-node");
   timelineNodes.forEach((node) => {
     node.addEventListener("click", () => {
@@ -154,6 +207,33 @@ function initWaterAdvisor() {
     });
   }
 
+  recalculateAndSelectCurrentStage();
+}
+
+function recalculateAndSelectCurrentStage() {
+  const variety = varietiesData?.varieties?.find((v) => v.id === fieldState.varietyId);
+  const stageRes = currentStage(variety, fieldState.sowingDate);
+
+  if (stageRes && stageRes.stage) {
+    fieldState.activeStageId = stageRes.stage;
+  } else {
+    fieldState.activeStageId = "tillering";
+  }
+
+  // Highlight active node in timeline
+  const timelineNodes = document.querySelectorAll(".timeline-node");
+  timelineNodes.forEach((n) => {
+    n.classList.toggle("active", n.dataset.stage === fieldState.activeStageId);
+  });
+
+  // Sync quick bar inputs
+  const quickDate = document.getElementById("waterQuickSowingDate");
+  const quickVariety = document.getElementById("waterQuickVariety");
+  const quickSaline = document.getElementById("waterQuickSaline");
+  if (quickDate && fieldState.sowingDate) quickDate.value = fieldState.sowingDate;
+  if (quickVariety && fieldState.varietyId) quickVariety.value = fieldState.varietyId;
+  if (quickSaline && fieldState.salinity) quickSaline.value = fieldState.salinity;
+
   updateAtlasDisplay(fieldState.activeStageId);
 }
 
@@ -164,11 +244,21 @@ function updateAtlasDisplay(stageId) {
   const variety = varietiesData?.varieties?.find((v) => v.id === fieldState.varietyId);
   const stageRes = currentStage(variety, fieldState.sowingDate);
 
-  // Update Top Right Status Pill
-  const daysVal = stageRes.days || 28;
+  // Compute days elapsed
+  const daysVal = (stageRes && stageRes.days !== undefined) ? stageRes.days : 28;
   const stageFormatted = stageId.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  
+  const stageDaysRanges = {
+    establishment: "0–15 days",
+    tillering: "16–45 days",
+    panicle_initiation: "46–59 days",
+    flowering: "60–75 days",
+    grain_filling: "76–92 days",
+    pre_harvest: "93+ days"
+  };
+
   document.getElementById("atlasStageTitle").textContent = stageFormatted;
-  document.getElementById("atlasStageDays").textContent = `Day ${daysVal} (${stageId === "establishment" ? "0–15" : stageId === "tillering" ? "16–45" : stageId === "panicle_initiation" ? "46–59" : stageId === "flowering" ? "60–75" : stageId === "grain_filling" ? "76–92" : "93+"} days)`;
+  document.getElementById("atlasStageDays").textContent = `Day ${daysVal} (${stageDaysRanges[stageId] || "Active stage"})`;
 
   // Update Recommendation Text
   if (stage) {
@@ -261,6 +351,22 @@ function initFieldLedger() {
     });
   }
 
+  // Yield difference slider listener
+  const yieldSlider = document.getElementById("dsrYieldSlider");
+  if (yieldSlider) {
+    yieldSlider.addEventListener("input", () => {
+      updateLedgerDisplay(fieldState.activeMethod);
+    });
+  }
+
+  // Farm acreage input listener
+  const acreageInput = document.getElementById("dsrAcreageInput");
+  if (acreageInput) {
+    acreageInput.addEventListener("input", () => {
+      updateLedgerDisplay(fieldState.activeMethod);
+    });
+  }
+
   // DSR Gate Inputs
   const gateInputs = ["dsrInputPrevCrop", "dsrInputLevelled", "dsrInputMachine", "dsrInputHerbicide", "dsrInputSaline"];
   gateInputs.forEach((id) => {
@@ -313,7 +419,7 @@ function updateLedgerDisplay(method) {
     captionEl.textContent = "Transplanted with AWD schedule: same seedling labour, but saves 7 pumping cycles.";
     totalCost = res.transplant_awd;
     waterUseEl.textContent = "Moderate (19 irrigations)";
-    waterSaveEl.textContent = `Saves ₹${res.awdSavings}/acre in pumping`;
+    waterSaveEl.textContent = `Saves ₹${res.awdSavings.toLocaleString("en-IN")}/acre in pumping`;
     yieldEl.textContent = "28–32 quintal / acre";
 
     items = [
@@ -330,7 +436,7 @@ function updateLedgerDisplay(method) {
     captionEl.textContent = "Direct-Seeded Rice (Tar-Wattar): laser-levelled sowing with seed drill; eliminates nursery & puddling.";
     totalCost = res.dsr;
     waterUseEl.textContent = "Low (18 irrigations)";
-    waterSaveEl.textContent = `Saves ₹${res.dsrSavingsVsConv}/acre vs conventional`;
+    waterSaveEl.textContent = `Saves ₹${res.dsrSavingsVsConv.toLocaleString("en-IN")}/acre vs conventional`;
     yieldEl.textContent = "25–30 quintal / acre";
 
     items = [
@@ -357,17 +463,48 @@ function updateLedgerDisplay(method) {
         <div class="cost-bar-fill" style="width: ${widthPct}%; ${item.isCredit ? 'background: #2e7d32;' : ''}"></div>
       </div>
       <span class="cost-bar-amount" style="${item.isCredit ? 'color: #2e7d32;' : ''}">
-        ${item.isCredit ? '-₹' + Math.abs(item.val) : '₹' + item.val.toLocaleString('en-IN')}
+        ${item.isCredit ? '-₹' + Math.abs(item.val).toLocaleString('en-IN') : '₹' + item.val.toLocaleString('en-IN')}
       </span>
     `;
     costBarsList.appendChild(row);
   });
 
-  // Update Break Even Card
+  // Update Break Even Card & Yield Difference Dynamics
   const beQuintals = breakEvenQuintals(res.transplant, res.dsr, activeCostParams.paddy_price_per_quintal);
   document.getElementById("ledgerBreakEvenStat").textContent = `${beQuintals} q/acre`;
   document.getElementById("ledgerBreakEvenDesc").textContent =
-    `DSR saves ₹${res.dsrSavingsVsConv.toLocaleString("en-IN")}/acre. It remains more profitable than transplanting unless weed pressure or crop stress causes a yield drop exceeding ${beQuintals} quintals/acre at current MSP ₹${activeCostParams.paddy_price_per_quintal}/q.`;
+    `DSR saves ₹${res.dsrSavingsVsConv.toLocaleString("en-IN")}/acre in field operations. It remains more profitable than transplanting unless weed pressure or crop stress causes a yield drop exceeding ${beQuintals} quintals/acre at current MSP ₹${activeCostParams.paddy_price_per_quintal}/q.`;
+
+  // Dynamic Yield Slider Calculation
+  const yieldSlider = document.getElementById("dsrYieldSlider");
+  const yieldDeltaVal = document.getElementById("yieldDeltaVal");
+  const acreageInput = document.getElementById("dsrAcreageInput");
+  const banner = document.getElementById("yieldNetBanner");
+
+  if (yieldSlider && yieldDeltaVal && banner) {
+    const yieldDelta = Number(yieldSlider.value);
+    const acres = acreageInput ? Math.max(1, Number(acreageInput.value) || 1) : 1;
+    const msp = activeCostParams.paddy_price_per_quintal || 2320;
+    
+    // Financial advantage = (Conventional Cost - DSR Cost) + (yieldDelta * MSP)
+    const costAdvantagePerAcre = res.dsrSavingsVsConv;
+    const netPerAcre = costAdvantagePerAcre + (yieldDelta * msp);
+    const netTotal = Math.round(netPerAcre * acres);
+
+    yieldDeltaVal.textContent = `${yieldDelta > 0 ? '+' : ''}${yieldDelta.toFixed(1)} q/acre`;
+
+    banner.className = "yield-net-banner";
+    if (netPerAcre > 50) {
+      banner.classList.add("advantage-positive");
+      banner.innerHTML = `DSR Profit Advantage: <strong>+₹${Math.round(netPerAcre).toLocaleString("en-IN")}/acre</strong> (+₹${netTotal.toLocaleString("en-IN")} total for ${acres} ${acres === 1 ? 'acre' : 'acres'})`;
+    } else if (Math.abs(netPerAcre) <= 50) {
+      banner.classList.add("advantage-neutral");
+      banner.innerHTML = `<strong>Exact Break-Even:</strong> DSR savings equal the slight yield drop. Net financial outcome is equal to transplanting.`;
+    } else {
+      banner.classList.add("advantage-negative");
+      banner.innerHTML = `Transplanting Advantage: Transplanting yields <strong>+₹${Math.round(Math.abs(netPerAcre)).toLocaleString("en-IN")}/acre</strong> more profit (+₹${Math.abs(netTotal).toLocaleString("en-IN")} total for ${acres} ${acres === 1 ? 'acre' : 'acres'}) due to yield drop.`;
+    }
+  }
 }
 
 function populateCostInputs() {
@@ -548,7 +685,7 @@ function initListeningRoom() {
 }
 
 async function executeAdvisorQuery(query) {
-  if (!query.trim()) return;
+  if (!query || !query.trim()) return;
 
   const card = document.getElementById("advisorAnswerCard");
   const textEl = document.getElementById("advisorAnswerText");
@@ -556,9 +693,9 @@ async function executeAdvisorQuery(query) {
 
   card.style.display = "block";
   textEl.textContent = "Consulting official guidance...";
-  sourceEl.textContent = "Searching...";
+  sourceEl.textContent = "Searching PAU package of practices...";
 
-  // Attempt to call local FastAPI backend
+  // 1. Attempt to call local FastAPI backend
   try {
     const res = await fetch("http://127.0.0.1:8000/ask", {
       method: "POST",
@@ -568,46 +705,35 @@ async function executeAdvisorQuery(query) {
 
     if (res.ok) {
       const data = await res.json();
-      textEl.textContent = data.answer;
-      if (data.sources && data.sources.length > 0) {
-        sourceEl.textContent = `${data.sources[0].title} (p. ${data.sources[0].page || "N/A"})`;
-      } else {
-        sourceEl.textContent = "Punjab Agriculture Department Extension Protocol";
+      if (data.grounded) {
+        textEl.textContent = data.answer;
+        if (data.sources && data.sources.length > 0) {
+          sourceEl.textContent = `${data.sources[0].title} (${data.sources[0].section}, p. ${data.sources[0].page || "N/A"})`;
+        } else {
+          sourceEl.textContent = "Punjab Agricultural University Extension Advisory";
+        }
+        card.scrollIntoView({ behavior: "smooth" });
+        return;
       }
+    }
+  } catch (err) {
+    // Backend offline or unreachable; fall through to browser-side RAG engine
+  }
+
+  // 2. Client-Side Grounded RAG Search (Handles ANY question over all 22 official PAU chunks)
+  if (pauChunksData && pauChunksData.length > 0) {
+    const match = searchChunks(query, pauChunksData);
+    if (match) {
+      textEl.textContent = match.answer;
+      sourceEl.textContent = match.source;
       card.scrollIntoView({ behavior: "smooth" });
       return;
     }
-  } catch (err) {
-    // Backend offline; use local grounded knowledge base
   }
 
-  // Local Grounded Extractive Fallback
-  const q = query.toLowerCase();
-  let answer = "";
-  let source = "";
-
-  if (q.includes("stop") || q.includes("harvest") || q.includes("cut")) {
-    answer = "Stop all irrigation 14 to 15 days before combine harvesting. This promotes uniform grain maturity, hardens the field for combine harvesters, and avoids crop lodging.";
-    source = "PAU Package of Practices for Kharif Crops: Rice Water Management (p. 27)";
-  } else if (q.includes("awd") || q.includes("tillering") || q.includes("dry")) {
-    answer = "Practice Alternate Wetting and Drying (AWD) during tillering. Apply 5 to 7 cm irrigation only 2 days after standing water has disappeared from the soil surface. Do not allow cracks to form. This saves 15–30% water.";
-    source = "PAU Package of Practices for Kharif Crops: AWD Guidance (p. 25)";
-  } else if (q.includes("saline") || q.includes("kallar") || q.includes("salt")) {
-    answer = "AWD is strictly NOT recommended on saline or kallar soils. Allowing soil to dry draws subsoil salts upward into the root zone, causing seedling mortality. Keep fields moist or shallow flooded.";
-    source = "PAU Soil & Water Salinity Advisory for Rice (p. 14)";
-  } else if (q.includes("dsr") || q.includes("direct") || q.includes("seed rate")) {
-    answer = "Direct-Seeded Rice requires medium to heavy laser-levelled soils. Use 8 to 10 kg certified seed per acre drilled with a DSR machine with press wheels. Spray pendimethalin within 24 hours of sowing.";
-    source = "PAU Tar-Wattar DSR Technology Guide (p. 31)";
-  } else if (q.includes("brown spot") || q.includes("leaf") || q.includes("zinc") || q.includes("khaira")) {
-    answer = "Brown pigmentation or rusty spots 2 to 3 weeks after transplanting indicates Zinc deficiency (Khaira disease). Broadcast 25 kg zinc sulphate heptahydrate 21% per acre.";
-    source = "PAU Micronutrient Management in Paddy (p. 40)";
-  } else {
-    answer = "I do not have a verified answer for this in the current official guidance. Please contact your local Block Agriculture Officer or KVK specialist for reliable local guidance.";
-    source = "Official Extension Protocol: Safe Referral";
-  }
-
-  textEl.textContent = answer;
-  sourceEl.textContent = source;
+  // 3. Safe Referral if query is off-topic or unverifiable
+  textEl.textContent = "I do not have a verified answer for this specific query in the current official Punjab guidance. Please contact your local Block Agriculture Officer or Krishi Vigyan Kendra (KVK) specialist for reliable local guidance.";
+  sourceEl.textContent = "Official Punjab Extension Protocol: Safe Referral";
   card.scrollIntoView({ behavior: "smooth" });
 }
 
@@ -721,31 +847,109 @@ function updateSpecimenDisplay(key) {
   const data = SPECIMENS_DATA[key];
   if (!data) return;
 
+  const metricsBox = document.getElementById("diagMetricsBox");
+  if (metricsBox) metricsBox.style.display = "none";
+
   document.getElementById("specimenLabel").textContent = data.label;
   document.getElementById("specimenDetail").textContent = data.detail;
   document.getElementById("diagProblemTitle").textContent = data.title;
-  document.getElementById("diagConfidenceBadge").textContent = data.confidence;
+  
+  const badge = document.getElementById("diagConfidenceBadge");
+  badge.textContent = data.confidence;
+  badge.className = "confidence-badge " + data.badgeClass;
+
   document.getElementById("diagSymptoms").textContent = data.symptoms;
   document.getElementById("diagGuidance").textContent = data.guidance;
   document.getElementById("diagSource").textContent = data.source;
 }
 
-function handlePhotoUpload(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const imgEl = document.getElementById("specimenActiveImage");
-    if (imgEl) imgEl.src = e.target.result;
+async function handlePhotoUpload(file) {
+  const imgEl = document.getElementById("specimenActiveImage");
+  const labelEl = document.getElementById("specimenLabel");
+  const detailEl = document.getElementById("specimenDetail");
+  const titleEl = document.getElementById("diagProblemTitle");
+  const badgeEl = document.getElementById("diagConfidenceBadge");
+  const symptomsEl = document.getElementById("diagSymptoms");
+  const guidanceEl = document.getElementById("diagGuidance");
+  const sourceEl = document.getElementById("diagSource");
+  const metricsBox = document.getElementById("diagMetricsBox");
 
-    document.getElementById("specimenLabel").textContent = "Uploaded Field Photo";
-    document.getElementById("specimenDetail").textContent = `Inspected image: ${file.name}`;
+  labelEl.textContent = "Uploaded Field Photo: " + file.name;
+  detailEl.textContent = "Running computer vision analysis on uploaded leaf...";
+  titleEl.textContent = "Inspecting leaf image...";
+  badgeEl.textContent = "Analyzing...";
+  badgeEl.className = "confidence-badge badge-high";
+  if (metricsBox) {
+    metricsBox.style.display = "block";
+    metricsBox.textContent = "Calculating blur variance, HSV vegetation coverage, and lesion patterns...";
+  }
 
-    // Show simulated grounded diagnosis
-    document.getElementById("diagProblemTitle").textContent = "Bacterial Leaf Blight (Visual Match)";
-    document.getElementById("diagConfidenceBadge").textContent = "Medium Confidence (74%)";
-    document.getElementById("diagSymptoms").textContent = "Observed water-soaked chlorotic streaks on outer leaf margins.";
-    document.getElementById("diagGuidance").textContent = "Field photo inspection suggests Bacterial Leaf Blight. Avoid chemical spraying before inspecting whether lesions are actively expanding across the crop.";
-  };
-  reader.readAsDataURL(file);
+  const objectUrl = URL.createObjectURL(file);
+  imgEl.src = objectUrl;
+
+  // Wait for image to render in memory
+  await new Promise((resolve) => {
+    if (imgEl.complete) resolve();
+    else imgEl.onload = resolve;
+  });
+
+  let diagnosisResult = null;
+  let engineUsed = "Browser Canvas Engine";
+
+  // 1. Attempt server-side OpenCV computer vision analysis
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("http://127.0.0.1:8000/diagnose", {
+      method: "POST",
+      body: formData,
+    });
+    if (res.ok) {
+      diagnosisResult = await res.json();
+      engineUsed = "FastAPI OpenCV Vision";
+    }
+  } catch (err) {
+    // Backend offline or unreachable
+  }
+
+  // 2. Client-side canvas pixel fallback analysis if server unavailable
+  if (!diagnosisResult) {
+    diagnosisResult = await inspectImageLocally(imgEl);
+  }
+
+  // Render the real diagnostic result
+  titleEl.textContent = diagnosisResult.title;
+  
+  const conf = (diagnosisResult.confidence || "medium").toLowerCase();
+  badgeEl.textContent = `${conf.toUpperCase()} CONFIDENCE`;
+  badgeEl.className = "confidence-badge " + (conf === "high" ? "badge-high" : conf === "low" ? "badge-low" : "badge-medium");
+
+  const symptomsText = Array.isArray(diagnosisResult.visible_signs)
+    ? diagnosisResult.visible_signs.join(" ")
+    : diagnosisResult.symptoms || "Visual signs analyzed from pixel distribution.";
+  symptomsEl.textContent = symptomsText;
+
+  guidanceEl.textContent = diagnosisResult.guidance;
+  sourceEl.textContent = "Source: " + (diagnosisResult.source || "PAU Rice Disease Management");
+
+  // Display quantitative metrics
+  if (metricsBox) {
+    metricsBox.style.display = "block";
+    const m = diagnosisResult.metrics;
+    if (m) {
+      const focusText = m.isBlurry ? "⚠️ Blurry (Low Edge Contrast)" : "✅ In-Focus";
+      const vegPct = Math.round((m.vegetationRatio || 0) * 100);
+      const yellowPct = Math.round((m.yellowRatio || 0) * 100);
+      const brownPct = Math.round((m.brownRatio || 0) * 100);
+      metricsBox.innerHTML = `
+        <strong>${engineUsed} Metrics:</strong> Focus: <em>${focusText}</em> (Score: ${m.gradVar.toFixed(1)}) • Foliage: <em>${vegPct}%</em> • Chlorosis (Yellow): <em>${yellowPct}%</em> • Necrosis (Brown): <em>${brownPct}%</em>
+      `;
+    } else {
+      metricsBox.innerHTML = `<strong>Engine:</strong> ${engineUsed} • Real-time spectral feature extraction complete.`;
+    }
+  }
+
+  document.getElementById("diagnosticResultCard")?.scrollIntoView({ behavior: "smooth" });
 }
 
 /* ======================================================== */
@@ -785,7 +989,7 @@ function initFieldModal() {
       fieldState.salinity = document.getElementById("settingSalinity").value;
 
       saveStoredState({ district: fieldState.district });
-      updateAtlasDisplay(fieldState.activeStageId);
+      recalculateAndSelectCurrentStage();
       closeModal();
     });
   }
@@ -813,7 +1017,7 @@ function populateModalForm() {
     varietiesData.varieties.forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v.id;
-      opt.textContent = v.name.en;
+      opt.textContent = `${v.name.en} (${v.duration_days.total_seed_to_seed} days)`;
       if (v.id === fieldState.varietyId) opt.selected = true;
       varSelect.appendChild(opt);
     });

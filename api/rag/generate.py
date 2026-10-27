@@ -49,25 +49,35 @@ def generate_grounded_answer(question: str, passages: list[dict], lang: str = "e
         except Exception as e:
             print("Gemini API call skipped or failed, falling back to local extractor:", e)
 
-    # Local deterministic extractive fallback ($0 cost, 100% grounded)
-    # Extracts the most relevant sentence from the top passage and cites it
+    # Local deterministic grounded synthesis ($0 cost, 100% grounded)
+    # Extracts the most relevant sentences from the top passages
     top_p = passages[0]
     p_text = top_p["text"]
-    q_words = set(re.findall(r"\w+", question.lower())) - {"what", "when", "how", "is", "the", "in", "to", "for", "a", "of"}
-    
+    q_words = set(re.findall(r"\w+", question.lower())) - {
+        "what", "when", "how", "is", "the", "in", "to", "for", "a", "of", "can", "i", "do", "does", "should", "my", "your"
+    }
+
     sentences = re.split(r"(?<=[.!?])\s+", p_text)
-    best_sent = ""
-    best_overlap = -1
+    matched_sentences = []
 
     for s in sentences:
         s_words = set(re.findall(r"\w+", s.lower()))
         overlap = len(q_words & s_words)
-        if overlap > best_overlap:
-            best_overlap = overlap
-            best_sent = s
+        if overlap > 0:
+            matched_sentences.append((overlap, s.strip()))
 
-    if best_overlap > 0 and best_sent:
-        return f"{best_sent.strip()} [1]"
+    matched_sentences.sort(key=lambda x: -x[0])
+
+    if matched_sentences:
+        # Take up to 2 best informative sentences
+        selected = [item[1] for item in matched_sentences[:2]]
+        ans_text = " ".join(selected)
+        
+        # If spraying or chemicals mentioned, add advisory note
+        if any(term in ans_text.lower() for term in ["spray", "herbicide", "fungicide", "chemical", "litre", "ml", "kg"]):
+            ans_text += " Always verify product label and confirm with your local Agriculture Officer."
+            
+        return f"{ans_text} [1]"
 
     # If no relevant sentence overlaps with the question
     return "NO_ANSWER"
