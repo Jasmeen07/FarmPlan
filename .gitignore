@@ -24,6 +24,7 @@ credentials/
 # Specification markdown files (avoid all other MDs per user instruction)
 FarmPlan_v2_Build_Spec.md
 FarmPlan_v2_Technical_Guide.md
+FarmPlan_Issues_and_Solutions.md
 docs/*.md
 
 # Indexes & generated databases

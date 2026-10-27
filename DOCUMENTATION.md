@@ -110,14 +110,33 @@ python -m uvicorn main:app --app-dir api --host 127.0.0.1 --port 8000 --reload
 API documentation available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 ### 3. Running Test Suites
-- **Frontend Vitest (36 tests)**:
+- **Frontend Vitest (39 tests)**:
   ```bash
   cd web && npm test
   ```
-- **Backend Pytest (12 tests)**:
+- **Backend Pytest (16 tests)**:
   ```bash
   python -m pytest api/tests
   ```
+
+---
+
+## 🛡️ Code Review Improvements & Hardened Protections
+
+In response to the comprehensive codebase inspection (`FarmPlan_Issues_and_Solutions.md`), all 10 identified issues have been systematically resolved and verified:
+
+| Issue | Area | Severity | Solution Implemented |
+| :--- | :--- | :--- | :--- |
+| **Issue 1** | Negation Removal | **P0** | Removed negation words (`not`, `no`, `never`, `none`, `neither`, `nor`, `without`, `stop`, `avoid`) from stop-words in both Python (`CUSTOM_STOP_WORDS`) and JavaScript. Added contrastive scoring so warning passages receive appropriate weight for safety questions. |
+| **Issue 2** | Context Window & Scoring | **P0/P1** | Increased retrieval context to `k=4` with calibrated `min_score=0.03`. Requires verified supporting passage evidence across multi-part questions before answering. |
+| **Issue 3** | Local Fallback Irrelevance | **P0/P1** | Eliminated arbitrary opening sentence selection. If no sentence in retrieved passages provides direct factual support or contains unsupported products, the generator cleanly abstains (`NO_ANSWER`), triggering official KVK/Agriculture Officer fallback. |
+| **Issue 4** | Traceable Sourced Citations | **P0** | Hardcoded passages enriched with traceable official source metadata: Organization (`PAU Ludhiana`), Publication (`Package of Practices for Kharif Crops 2024`), Year (`2024`), Section, Page, and explicit safety condition constraints. |
+| **Issue 5** | Missing Index Deployment Risk | **P0** | Added startup self-healing lifecycle in FastAPI (`ensure_db_initialized()`) that auto-builds `chunks.sqlite` if missing or unindexed. Updated `/health` endpoint to return readiness, loaded chunk count (`>=20`), and vectorizer status. |
+| **Issue 6** | Frontend & Backend Retrieval Divergence | **P1** | Made backend API canonical with seamless client fallback. Synchronized synonym mappings, eliminated arbitrary fallback sentences in JavaScript, and added explicit `is_offline_client: true` badge on offline turns. |
+| **Issue 7** | Narrow Follow-Up Context | **P1** | Implemented topic-shift classification (`detect_topic`) across 8 domains (water, variety, nutrition, weeds, pests, diseases, DSR, stubble). Follow-ups referencing pronouns or attributes (`"how much water does it save?"`) retain context; explicit topic shifts safely reset context. |
+| **Issue 8** | Unicode Script Tokenization | **P1** | Upgraded tokenizers in Python and JavaScript to support Unicode Indic combining marks (`\p{M}` in JS, `[\w\u0900-\u097F\u0A00-\u0A7F]+` in Python). Prevents Gurmukhi (ਪੰਜਾਬੀ) and Devanagari (हिन्दी) words from being fragmented. |
+| **Issue 9** | Overly Permissive CORS | **P1** | Restricted CORS from wildcard `*` to an explicit allowlist of frontend origins (`localhost:5173`, `127.0.0.1:5173`, `localhost:4173`, `127.0.0.1:4173`), configurable via `CORS_ORIGINS`. |
+| **Issue 10** | Evaluation Benchmark Suite | **P1** | Expanded `api/tests/test_questions.jsonl` to 20 labelled evaluation queries covering contrastive negation, salinity constraints, sandy soil exclusions, multi-part questions, Indic scripts, and out-of-scope abstentions. Pytest suite expanded to 16 automated test suites. |
 
 ---
 
@@ -129,7 +148,7 @@ API documentation available at [http://127.0.0.1:8000/docs](http://127.0.0.1:800
 ---
 
 ## 📚 Official Sourced References
-1. Punjab Agricultural University (PAU), *Package of Practices for the Kharif Crops of Punjab: Rice* (2024–2026).
-2. PAU Directorate of Extension Education, *Direct Seeded Rice (Tar-Wattar DSR) Technology Bulletin*.
-3. Punjab Subsoil Water Preservation Act & Sowing Window Notifications.
+1. Punjab Agricultural University (PAU), *Package of Practices for the Kharif Crops of Punjab: Rice* (2024).
+2. PAU Directorate of Extension Education, *Direct Seeded Rice (Tar-Wattar DSR) Technology Bulletin* (2024).
+3. Punjab Subsoil Water Preservation Act 2008 & Statutory Sowing Window Notifications (2024).
 4. ICAR-National Rice Research Institute (NRRI), *Alternate Wetting and Drying (AWD) Technical Manual*.

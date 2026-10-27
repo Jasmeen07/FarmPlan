@@ -1,21 +1,38 @@
 """
 api/rag/retrieve.py
 Local retrieval engine querying official PAU chunks in SQLite.
-Uses TF-IDF, semantic concept expansion, and cosine similarity for $0 cost,
-zero API dependency, high-speed local matching for any farmer query.
+Uses TF-IDF with negation-preserving stop-words, Unicode-aware tokenization,
+and domain concept expansion for $0 cost, zero API dependency, high-precision retrieval.
 """
 
 import re
 import sqlite3
 from pathlib import Path
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.metrics.pairwise import cosine_similarity
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "chunks.sqlite"
 
+# Negation and safety-critical terms preserved from stop-words
+SAFETY_PRESERVED_WORDS = {
+    "not", "no", "never", "none", "neither", "nor", "without", "except",
+    "stop", "against", "cannot", "cant", "wont", "dont", "shouldnt", "isnt",
+    "avoid", "restrict", "restricted", "ban", "banned"
+}
+CUSTOM_STOP_WORDS = list(ENGLISH_STOP_WORDS - SAFETY_PRESERVED_WORDS)
+
 # Comprehensive Agricultural Domain Concept & Synonym Mappings
-# Maps colloquial farmer terms (English, Punjabi, Hindi, Hinglish) to official PAU terminology
+# Maps colloquial farmer terms (English, Punjabi Gurmukhi, Hindi Devanagari, Transliteration) to official PAU terminology
 CONCEPT_SYNONYMS = {
+    # Negation, Restrictions & Safety Warnings
+    "not": "not strictly prohibited avoid restriction never exception",
+    "no": "not strictly prohibited avoid restriction never",
+    "never": "never strictly prohibited avoid restriction not continuous shallow water 5 cm",
+    "stop": "stop 14 15 days harvest combine termination discontinue",
+    "avoid": "avoid strictly prohibited not recommended warning",
+    "ban": "pusa 44 unrecommended prohibited Punjab Government groundwater depletion",
+    "banned": "pusa 44 unrecommended prohibited Punjab Government groundwater depletion",
+
     # Water & Irrigation
     "water": "irrigation awd flooding submergence standing water moisture infiltration drainage sinchai paani watering tubewell canal ponding",
     "irrigate": "water irrigation awd watering schedule intervals puddle submergence sinchai",
@@ -26,9 +43,9 @@ CONCEPT_SYNONYMS = {
     "awd": "alternate wetting drying tillering days hairline cracks water saving tubewell",
     "dry": "drying alternate wetting drying tillering cracks moisture",
     "drying": "alternate wetting drying tillering cracks moisture",
-    "harvest": "combine harvesting stop termination maturity cutting lodging",
-    "katayi": "harvest combine stop irrigation termination",
-    "flowering": "nissar panicle initiation flowering moisture stress standing water 5 cm",
+    "harvest": "combine harvesting stop termination maturity cutting lodging 14 15 days",
+    "katayi": "harvest combine stop irrigation termination 14 15 days",
+    "flowering": "nissar panicle initiation flowering moisture stress standing water 5 cm never dry",
     "establishment": "transplanting seedling 15 days shallow standing water 3 to 5 cm weed suppression",
 
     # Fertilizers & Nutrition
@@ -83,13 +100,14 @@ CONCEPT_SYNONYMS = {
     "spot": "brown spots blast zinc deficiency bacterial leaf blight",
     "fungus": "blast sheath blight false smut propiconazole tricyclazole",
 
-    # DSR & Sowing Methods
+    # DSR, Soil & Restrictions
     "dsr": "direct seeded rice tar-wattar drill laser levelling seed rate pendimethalin weed 8 10 kg siddhi bijai",
     "direct": "direct seeded rice dsr tar-wattar seed drill siddhi bijai",
     "seeding": "direct seeded rice dsr tar-wattar seed drill nursery",
     "machine": "dsr drill inclined plates press wheels laser leveller happy seeder",
-    "saline": "saline sodic kallar salt brackish tubewell upward capillary root zone khara",
-    "kallar": "saline sodic kallar salt brackish tubewell upward capillary",
+    "saline": "saline sodic kallar salt brackish tubewell upward capillary root zone khara strictly not recommended",
+    "kallar": "saline sodic kallar salt brackish tubewell upward capillary strictly not recommended",
+    "sandy": "sandy light soil raitli iron deficiency not recommended dsr 1 day drying caution",
 
     # Varieties & Seeds
     "variety": "pr 126 pr 131 pr 128 pusa 44 duration days yield short medium beej",
@@ -114,7 +132,38 @@ CONCEPT_SYNONYMS = {
     "subsidy": "punjab government incentive 1500 rupees per acre direct seeded rice dsr",
     "incentive": "punjab government incentive 1500 rupees per acre direct seeded rice dsr",
     "stubble": "paddy straw residue happy seeder smart seeder burning zero tillage parali",
-    "parali": "paddy straw residue happy seeder smart seeder burning stubble"
+    "parali": "paddy straw residue happy seeder smart seeder burning stubble",
+
+    # Gurmukhi (Punjabi) Concepts
+    "ਪਾਣੀ": "water irrigation awd sinchai flooding standing",
+    "ਝੋਨਾ": "paddy rice crop kharif",
+    "ਝੋਨੇ": "paddy rice crop kharif",
+    "ਖਾਦ": "fertilizer urea nitrogen dap khad",
+    "ਨਦੀਨ": "weeds herbicide pendimethalin bispyribac spray",
+    "ਕੀੜੇ": "insects pests bph leaf folder stem borer",
+    "ਬਿਮਾਰੀ": "disease blast blight sheath fungus",
+    "ਵਾਢੀ": "harvest combine stop irrigation termination 14 15 days",
+    "ਕਟਾਈ": "harvest combine stop irrigation termination 14 15 days",
+    "ਬੀਜ": "seed certified seed rate nursery 8 kg",
+    "ਪਨੀਰੀ": "nursery seedlings 25 30 days 1 marla",
+    "ਨਿਸਰਨ": "flowering panicle initiation standing water 5 cm continuous never dry",
+    "ਸੁੱਕਣਾ": "drying alternate wetting drying awd cracks",
+    "ਰੇਤਲੀ": "sandy light soil raitli iron deficiency not recommended dsr",
+    "ਕੱਲਰ": "saline sodic kallar salt brackish awd strictly not recommended",
+
+    # Devanagari (Hindi) Concepts
+    "पानी": "water irrigation awd sinchai flooding standing",
+    "धान": "paddy rice crop kharif",
+    "खाद": "fertilizer urea nitrogen dap khad",
+    "खरपतवार": "weeds herbicide pendimethalin bispyribac spray",
+    "कीट": "insects pests bph leaf folder stem borer",
+    "रोग": "disease blast blight sheath fungus",
+    "कटाई": "harvest combine stop irrigation termination 14 15 days",
+    "बीज": "seed certified seed rate nursery 8 kg",
+    "नर्सरी": "nursery seedlings 25 30 days 1 marla",
+    "फूल": "flowering panicle initiation standing water 5 cm continuous never dry",
+    "रेतीली": "sandy light soil raitli iron deficiency not recommended dsr",
+    "कल्लड़": "saline sodic kallar salt brackish awd strictly not recommended"
 }
 
 class Retriever:
@@ -126,12 +175,16 @@ class Retriever:
         self.reload()
 
     def reload(self):
-        """Loads chunks from SQLite and builds TF-IDF index."""
+        """Loads chunks from SQLite and builds negation-preserving TF-IDF index."""
         if not self.db_path.exists():
             return
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, doc_id, title, lang, region, page, section, text FROM chunks")
+        cursor.execute("""
+            SELECT id, doc_id, title, source_org, publication, edition_year,
+                   lang, region, page, section, safety_conditions, text
+            FROM chunks
+        """)
         rows = cursor.fetchall()
         conn.close()
 
@@ -140,30 +193,45 @@ class Retriever:
                 "id": r[0],
                 "doc_id": r[1],
                 "title": r[2],
-                "lang": r[3],
-                "region": r[4],
-                "page": r[5],
-                "section": r[6],
-                "text": r[7],
+                "source_org": r[3],
+                "publication": r[4],
+                "edition_year": r[5],
+                "lang": r[6],
+                "region": r[7],
+                "page": r[8],
+                "section": r[9],
+                "safety_conditions": r[10],
+                "text": r[11],
             }
             for r in rows
         ]
 
         if self.chunks:
-            corpus = [f"{c['title']} {c['section']} {c['text']}" for c in self.chunks]
-            self.vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words="english")
+            # Build corpus including title, section, safety conditions, and full text
+            corpus = [
+                f"{c['title']} {c['section']} {c.get('safety_conditions', '')} {c['text']}"
+                for c in self.chunks
+            ]
+            self.vectorizer = TfidfVectorizer(
+                ngram_range=(1, 2),
+                token_pattern=r"(?u)\b\w+\b",
+                stop_words=CUSTOM_STOP_WORDS
+            )
             self.tfidf_matrix = self.vectorizer.fit_transform(corpus)
 
-    def retrieve(self, question: str, k: int = 3, min_score: float = 0.02) -> list[dict]:
+    def retrieve(self, question: str, k: int = 4, min_score: float = 0.03) -> list[dict]:
         """
-        Retrieves top-k relevant chunks for question using domain concept expansion.
+        Retrieves top-k relevant chunks for question using negation-preserving concept expansion.
         Returns empty list only if question has zero agricultural relevance.
         """
         if not self.chunks or self.vectorizer is None or self.tfidf_matrix is None:
             return []
 
-        q_clean = question.lower()
-        tokens = re.findall(r"\w+", q_clean)
+        q_clean = question.lower().strip()
+        tokens = re.findall(r"[\w\u0900-\u097F\u0A00-\u0A7F]+", q_clean)
+
+        # Detect negation intent to boost safety warnings
+        has_negation = any(tok in SAFETY_PRESERVED_WORDS or tok in ["not", "never", "no", "stop", "avoid", "ਬੰਦ", "ਨਹੀਂ", "ਮਨ੍ਹਾ", "बंद", "नहीं", "मना"] for tok in tokens)
 
         # Expand query with matched agricultural concept expansions
         expanded_parts = [question]
@@ -175,6 +243,14 @@ class Retriever:
 
         q_vec = self.vectorizer.transform([expanded_query])
         scores = cosine_similarity(q_vec, self.tfidf_matrix)[0]
+
+        # Contrastive negation scoring adjustment
+        if has_negation:
+            for i, chunk in enumerate(self.chunks):
+                chunk_text_lower = f"{chunk['section']} {chunk.get('safety_conditions', '')} {chunk['text']}".lower()
+                # If question asks about what NOT to do or when to STOP, boost warning/restriction passages
+                if any(w in chunk_text_lower for w in ["stop", "never", "not recommended", "strictly", "prohibited", "do not"]):
+                    scores[i] *= 1.35
 
         ranked_indices = scores.argsort()[::-1]
         results = []

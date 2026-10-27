@@ -1,8 +1,8 @@
 """
 api/rag/conversation.py
 Conversational dialogue manager for FarmPlan Assistant.
-Handles greetings, pleasantries, gratitude, and contextual conversation flows
-so farmers have a warm, natural conversation without artificial refusals.
+Handles greetings, pleasantries, gratitude, and context-aware follow-ups with topic-shift detection.
+Grounded in official PAU knowledge without bleeding unrelated constraints across topic changes.
 """
 
 import re
@@ -42,6 +42,25 @@ IDENTITY_RESPONSES = {
     "hi": "मैं फार्म-प्लान हूँ, जो पंजाब कृषि विश्वविद्यालय (PAU) के प्रमाणित अनुसंधान पर आधारित है। मैं किसानों को पानी बचाने (AWD), सीधी बिजाई (DSR) के खर्च और धान की बीमारियों के बारे में सही सलाह देता हूँ।"
 }
 
+# Domain Topic Classifier for Context Tracking
+TOPIC_KEYWORDS = {
+    "water": ["water", "irrigation", "awd", "flooding", "drying", "tubewell", "pumping", "cracks", "submergence", "paani", "sinchai"],
+    "variety": ["variety", "varieties", "pr 126", "pr 131", "pr 128", "pusa 44", "duration", "yield", "maturation"],
+    "nutrition": ["urea", "nitrogen", "dap", "phosphorus", "zinc", "iron", "chlorosis", "khaira", "fertilizer", "khad", "split"],
+    "weed": ["weed", "weeds", "herbicide", "pendimethalin", "pretilachlor", "butachlor", "bispyribac", "swank", "motha", "ghas"],
+    "pest": ["pest", "pests", "insect", "insects", "bph", "hopper", "leaf folder", "stem borer", "caterpillar", "keeda", "sundi"],
+    "disease": ["disease", "diseases", "blast", "blight", "bacterial leaf blight", "blb", "sheath blight", "fungus", "bimari", "rog"],
+    "dsr": ["dsr", "direct seeded", "tar-wattar", "drill", "laser levelling", "siddhi bijai"],
+    "residue": ["stubble", "straw", "happy seeder", "smart seeder", "burning", "parali", "residue"]
+}
+
+def detect_topic(text: str) -> str | None:
+    t_lower = text.lower()
+    for topic, kw_list in TOPIC_KEYWORDS.items():
+        if any(kw in t_lower for kw in kw_list):
+            return topic
+    return None
+
 def detect_conversational_intent(query: str, lang: str = "en") -> dict | None:
     """
     Detects if the query is a greeting, gratitude, or identity question.
@@ -52,8 +71,6 @@ def detect_conversational_intent(query: str, lang: str = "en") -> dict | None:
     # 1. Greetings
     for pattern in GREETING_PATTERNS:
         if re.search(pattern, q):
-            # If the user combined greeting with a question (e.g. "Hello, when to put urea?")
-            # check if there's also an agronomic question
             rem = re.sub(pattern, "", q).strip()
             if len(rem) > 8 and any(term in rem for term in ["water", "urea", "spray", "weed", "pest", "dsr", "seed", "disease", "fertilizer", "khad"]):
                 return None  # Let it pass through to the RAG retriever with the full query
@@ -88,38 +105,78 @@ def detect_conversational_intent(query: str, lang: str = "en") -> dict | None:
 
 def contextualize_followup(question: str, history: list[dict]) -> str:
     """
-    If the current question is a short follow-up or uses pronouns,
-    enriches the query with topic keywords from the previous conversation turn.
+    Intelligently contextualizes follow-ups while safely respecting topic shifts (Issue 7).
+    If the question is an obvious topic change, old constraints are not carried over.
     """
-    if not history or len(history) == 0:
+    if not history:
         return question
 
     q_lower = question.lower().strip()
     words = q_lower.split()
 
-    # Short follow-up indicators
-    needs_context = (
-        len(words) <= 5 or
-        any(p in words for p in ["it", "this", "that", "these", "those", "them", "why", "how", "when", "cost", "more", "save", "sandy", "clay"])
-    )
+    current_topic = detect_topic(q_lower)
 
-    if not needs_context:
-        return question
-
-    # Find the last user turn or last assistant answer
+    # Find the most recent active user query in history
     last_user_query = ""
     for msg in reversed(history):
         if msg.get("role") == "user" and msg.get("content"):
-            last_user_query = msg.get("content", "")
+            last_user_query = msg.get("content", "").strip()
             break
 
-    if last_user_query:
-        # Extract key agronomic nouns from the previous query
-        key_terms = []
-        for term in ["awd", "water", "irrigation", "dsr", "pr 126", "pr 131", "urea", "fertilizer", "weed", "pest", "hopper", "blast", "blight", "zinc", "iron", "stubble"]:
-            if term in last_user_query.lower():
-                key_terms.append(term)
-        if key_terms:
-            return f"{question} {' '.join(key_terms)}"
+    if not last_user_query:
+        return question
+
+    last_topic = detect_topic(last_user_query)
+
+    # Topic Shift Detection:
+    # If the current question introduces a distinctly new topic (e.g. from variety to pest),
+    # do NOT bleed the old topic's constraints into the new query, unless it uses a pronoun.
+    has_pronoun = any(p in words for p in ["it", "its", "this", "that", "these", "those", "them"])
+    if current_topic and last_topic and current_topic != last_topic and not has_pronoun:
+        # Check if it's a cross-topic comparison or pure topic change
+        if not any(marker in q_lower for marker in ["what about", "how about", "difference", "compare"]):
+            return question
+
+    # Genuine Follow-Up Detection
+    is_followup = (
+        len(words) <= 5 or
+        any(p in words for p in ["it", "its", "this", "that", "these", "those", "them"]) or
+        any(phrase in q_lower for phrase in [
+            "what about", "how about", "and if", "in case of", "how much", "when to stop",
+            "during flowering", "in saline", "in sandy", "water savings", "how many days",
+            "what is the cost", "cost savings", "why", "can i", "is it safe"
+        ])
+    )
+
+    if not is_followup:
+        return question
+
+    # Extract relevant entities from previous context
+    context_tags = []
+    last_lower = last_user_query.lower()
+
+    # Track Variety
+    for var in ["pr 126", "pr 131", "pr 128", "pusa 44"]:
+        if var in last_lower:
+            context_tags.append(var)
+            break
+
+    # Track Water Practice
+    if any(w in last_lower for w in ["awd", "alternate wetting", "irrigation"]):
+        if "water" not in q_lower and "awd" not in q_lower:
+            context_tags.append("awd water management")
+
+    # Track DSR
+    if "dsr" in last_lower or "tar-wattar" in last_lower:
+        if "dsr" not in q_lower:
+            context_tags.append("dsr direct seeded rice")
+
+    # Track Fertilizer
+    if any(f in last_lower for f in ["urea", "nitrogen", "fertilizer", "dap", "zinc"]):
+        if not current_topic:
+            context_tags.append("fertilizer application")
+
+    if context_tags:
+        return f"{question} {' '.join(context_tags)}"
 
     return question

@@ -1,6 +1,7 @@
 """
 api/tests/test_rag.py
-Automated test suite for FarmPlan Tier 2 RAG pipeline, number validator, and Tier 3 diagnosis.
+Automated test suite for FarmPlan Tier 2 RAG pipeline, number validator,
+contrastive negation, health readiness, and evaluation benchmark dataset.
 """
 
 import io
@@ -19,6 +20,7 @@ from fastapi.testclient import TestClient
 from main import app
 from rag.validate import numbers_supported, normalise_digits, extract_numbers
 from rag.retrieve import retriever
+from rag.conversation import contextualize_followup
 from vision.diagnose import analyze_image_bytes
 
 client = TestClient(app)
@@ -62,15 +64,40 @@ def test_retriever_expanded_varieties():
     assert "PR 126" in results[0]["text"]
     assert "93 days" in results[0]["text"]
 
+def test_retriever_contrastive_negation():
+    # Contrastive check: asking about not drying during flowering
+    q_neg = "Should I not dry the field during flowering stage?"
+    res_neg = retriever.retrieve(q_neg, k=1)
+    assert len(res_neg) > 0
+    assert "Flowering" in res_neg[0]["section"]
+    assert "Never allow the field to dry" in res_neg[0]["text"]
+
+def test_saline_and_sandy_soil_constraints():
+    # Saline soil check
+    res_saline = retriever.retrieve("Can I use AWD in saline soil?", k=1)
+    assert len(res_saline) > 0
+    assert "Salinity" in res_saline[0]["title"]
+    assert "strictly NOT recommended" in res_saline[0]["text"]
+
+    # Sandy soil check
+    res_sandy = retriever.retrieve("Is DSR recommended for light sandy soils?", k=1)
+    assert len(res_sandy) > 0
+    assert "sandy" in res_sandy[0]["text"].lower()
+    assert "not" in res_sandy[0]["text"].lower()
+
 def test_retriever_out_of_scope_declined():
-    # Out of scope queries should return low scores or empty results
     results = retriever.retrieve("What is the current stock price of Apple in USD?", min_score=0.15)
     assert len(results) == 0
 
-def test_api_health():
+def test_api_health_readiness():
     res = client.get("/health")
     assert res.status_code == 200
-    assert res.json() == {"ok": True, "status": "healthy"}
+    data = res.json()
+    assert data["ok"] is True
+    assert data["readiness"] is True
+    assert data["status"] == "healthy"
+    assert data["loaded_chunks"] >= 20
+    assert "Punjab Agricultural University" in data["source_org"]
 
 def test_api_ask_in_scope():
     res = client.post("/ask", json={"question": "When to stop irrigation before harvest?", "lang": "en"})
@@ -79,6 +106,8 @@ def test_api_ask_in_scope():
     assert data["grounded"] is True
     assert len(data["sources"]) > 0
     assert "14" in data["answer"] or "15" in data["answer"]
+    assert "publication" in data["sources"][0]
+    assert "source_org" in data["sources"][0]
 
 def test_api_ask_out_of_scope():
     res = client.post("/ask", json={"question": "What is the capital of France?", "lang": "en"})
@@ -87,14 +116,60 @@ def test_api_ask_out_of_scope():
     assert data["grounded"] is False
     assert "Agriculture Officer" in data["answer"]
 
+def test_contextualize_followup_topic_shift():
+    # Case 1: Genuine follow-up carries PR 126 context
+    history1 = [{"role": "user", "content": "tell me about PR 126"}, {"role": "assistant", "content": "PR 126 is short duration."}]
+    q1 = contextualize_followup("how much water does it save?", history1)
+    assert "pr 126" in q1.lower()
+
+    # Case 2: Topic change from PR 126 to Brown Plant Hopper does NOT inject PR 126
+    history2 = [{"role": "user", "content": "tell me about PR 126"}, {"role": "assistant", "content": "PR 126 is short duration."}]
+    q2 = contextualize_followup("How to control brown plant hopper insect pest?", history2)
+    assert "pr 126" not in q2.lower()
+    assert "brown plant hopper" in q2.lower()
+
+def test_evaluation_benchmark_suite():
+    """Runs through the 20-question benchmark dataset in test_questions.jsonl"""
+    eval_file = API_DIR / "tests" / "test_questions.jsonl"
+    assert eval_file.exists()
+
+    with open(eval_file, "r", encoding="utf-8") as f:
+        questions = [json.loads(line) for line in f if line.strip()]
+
+    assert len(questions) >= 15
+
+    for item in questions:
+        q_text = item["q"]
+        expect = item["expect"]
+
+        res = client.post("/ask", json={"question": q_text, "lang": item.get("lang", "en")})
+        assert res.status_code == 200
+        data = res.json()
+
+        if expect == "decline":
+            assert data["grounded"] is False, f"Expected decline for: {q_text}"
+            assert "Agriculture Officer" in data["answer"]
+        elif expect == "answer":
+            assert data["grounded"] is True, f"Expected answer for: {q_text}"
+            assert len(data["sources"]) > 0
+
+            # If expected_doc_id is specified, verify it was retrieved
+            if "expected_doc_id" in item:
+                # Top retrieved chunk should match expected doc
+                passages = retriever.retrieve(q_text, k=2)
+                assert len(passages) > 0
+                assert passages[0]["doc_id"] == item["expected_doc_id"] or passages[1]["doc_id"] == item["expected_doc_id"], \
+                    f"Wrong passage retrieved for {q_text}: got {passages[0]['doc_id']}"
+
+            # Check numbers
+            for num in item.get("must_contain_numbers", []):
+                assert num in data["answer"], f"Expected number {num} in answer for {q_text}, got: {data['answer']}"
+
 def test_api_diagnose_valid_leaf():
-    # Create a synthetic 400x400 leaf image with green and yellow marginal pixels
     img = Image.new("RGB", (400, 400), color=(45, 120, 35))
-    # Add yellow edge
     for x in range(320, 400):
         for y in range(400):
             img.putpixel((x, y), (210, 180, 30))
-    
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
     buf.seek(0)

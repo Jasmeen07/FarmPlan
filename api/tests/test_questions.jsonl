@@ -1,9 +1,20 @@
-{"id": "q01", "lang": "en", "q": "When should irrigation stop before harvest?", "expect": "answer", "must_contain_numbers": ["14", "15"], "source_section": "Irrigation Termination"}
-{"id": "q02", "lang": "en", "q": "How much water does AWD save during tillering?", "expect": "answer", "must_contain_numbers": ["15", "30"], "source_section": "AWD"}
-{"id": "q03", "lang": "en", "q": "What is the recommended seed rate per acre for DSR?", "expect": "answer", "must_contain_numbers": ["8", "10"], "source_section": "DSR"}
-{"id": "q04", "lang": "en", "q": "What should be sprayed for zinc deficiency khaira disease?", "expect": "answer", "must_contain_numbers": ["25", "21"], "source_section": "Zinc"}
+{"id": "q01", "lang": "en", "q": "When should irrigation stop before harvest?", "expect": "answer", "expected_doc_id": "pau_kharif_water_2024", "must_contain_numbers": ["14", "15"], "source_section": "Irrigation Termination"}
+{"id": "q02", "lang": "en", "q": "How much water does AWD save during tillering?", "expect": "answer", "expected_doc_id": "pau_kharif_water_2024", "must_contain_numbers": ["15", "30"], "source_section": "AWD"}
+{"id": "q03", "lang": "en", "q": "What is the recommended seed rate per acre for DSR?", "expect": "answer", "expected_doc_id": "pau_kharif_dsr_2024", "must_contain_numbers": ["8", "10"], "source_section": "DSR"}
+{"id": "q04", "lang": "en", "q": "What should be sprayed for zinc deficiency khaira disease?", "expect": "answer", "expected_doc_id": "pau_kharif_nutrition_2024", "must_contain_numbers": ["25", "21"], "source_section": "Zinc"}
 {"id": "q05", "lang": "en", "q": "What is the share price of Reliance in Mumbai today?", "expect": "decline"}
 {"id": "q06", "lang": "en", "q": "Can I spray 500ml of unregistered chemical XYZ?", "expect": "decline"}
-{"id": "q07", "lang": "pa", "q": "ਕਟਾਈ ਤੋਂ ਕਿੰਨੇ ਦਿਨ ਪਹਿਲਾਂ ਪਾਣੀ ਬੰਦ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ?", "expect": "answer", "must_contain_numbers": ["14", "15"]}
-{"id": "q08", "lang": "hi", "q": "कटाई से कितने दिन पहले धान की सिंचाई बंद करनी चाहिए?", "expect": "answer", "must_contain_numbers": ["14", "15"]}
+{"id": "q07", "lang": "pa", "q": "ਕਟਾਈ ਤੋਂ ਕਿੰਨੇ ਦਿਨ ਪਹਿਲਾਂ ਪਾਣੀ ਬੰਦ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ?", "expect": "answer", "expected_doc_id": "pau_kharif_water_2024", "must_contain_numbers": ["14", "15"]}
+{"id": "q08", "lang": "hi", "q": "कटाई से कितने दिन पहले धान की सिंचाई बंद करनी चाहिए?", "expect": "answer", "expected_doc_id": "pau_kharif_water_2024", "must_contain_numbers": ["14", "15"]}
 {"id": "q09", "lang": "en", "q": "What is the weather forecast for New York next week?", "expect": "decline"}
+{"id": "q10", "lang": "en", "q": "Should I not dry the field during flowering stage?", "expect": "answer", "expected_doc_id": "pau_kharif_water_2024", "must_contain_terms": ["never", "flowering", "5 cm"], "source_section": "Panicle Initiation to Flowering"}
+{"id": "q11", "lang": "en", "q": "Can I practice AWD in saline or kallar soil?", "expect": "answer", "expected_doc_id": "pau_kharif_salinity_2024", "must_contain_terms": ["not recommended", "saline", "salts"], "source_section": "Saline Soil & Brackish Water Advisory"}
+{"id": "q12", "lang": "en", "q": "Is DSR recommended for light sandy soils?", "expect": "answer", "expected_doc_id": "pau_kharif_dsr_2024", "must_contain_terms": ["not", "sandy"], "source_section": "Field Suitability & Sowing Method"}
+{"id": "q13", "lang": "en", "q": "What is the duration of PR 126 paddy variety?", "expect": "answer", "expected_doc_id": "pau_kharif_varieties_2024", "must_contain_numbers": ["93", "123"], "source_section": "Short vs Long Duration Varieties"}
+{"id": "q14", "lang": "en", "q": "How many kg urea should be applied for PR 126 in medium soil?", "expect": "answer", "expected_doc_id": "pau_kharif_fertilizer_2024", "must_contain_numbers": ["110", "21", "42"], "source_section": "Urea and Nitrogen Application Splits"}
+{"id": "q15", "lang": "en", "q": "When is transplanting legally permitted in Zone 1 under Subsoil Water Act?", "expect": "answer", "expected_doc_id": "pau_kharif_sowing_dates_2024", "must_contain_numbers": ["11"], "source_section": "District Zones and Legal Transplanting Dates"}
+{"id": "q16", "lang": "en", "q": "What is the economic threshold and spray dose for Brown Plant Hopper BPH?", "expect": "answer", "expected_doc_id": "pau_kharif_pest_bph_2024", "must_contain_numbers": ["5", "94"], "source_section": "Brown Plant Hopper (BPH)"}
+{"id": "q17", "lang": "pa", "q": "ਕੀ ਕੱਲਰ ਵਾਲੀ ਜ਼ਮੀਨ ਵਿੱਚ ਪਾਣੀ ਸੁਕਾਉਣਾ ਚਾਹੀਦਾ ਹੈ?", "expect": "answer", "expected_doc_id": "pau_kharif_salinity_2024", "must_contain_terms": ["not", "saline", "salts"]}
+{"id": "q18", "lang": "hi", "q": "क्या रेतीली जमीन में सीधी बिजाई DSR की जा सकती है?", "expect": "answer", "expected_doc_id": "pau_kharif_dsr_2024", "must_contain_terms": ["not", "sandy"]}
+{"id": "q19", "lang": "en", "q": "What is the cost of Bitcoin in Tokyo?", "expect": "decline"}
+{"id": "q20", "lang": "en", "q": "How to repair a broken Tesla electric car motor?", "expect": "decline"}

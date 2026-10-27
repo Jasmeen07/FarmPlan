@@ -49,4 +49,25 @@ describe("ragClient search engine", () => {
     const res = searchChunks("How to invest in Bitcoin cryptocurrency?", mockChunks);
     expect(res).toBeNull();
   });
+
+  it("preserves negation words in tokenization", () => {
+    const tokens = tokenize("Should I not dry the field?");
+    expect(tokens).toContain("not");
+  });
+
+  it("preserves Unicode Gurmukhi and Devanagari in tokenization", () => {
+    const paTokens = tokenize("ਵਾਢੀ ਤੋਂ ਪਹਿਲਾਂ ਪਾਣੀ");
+    expect(paTokens).toContain("ਵਾਢੀ");
+    expect(paTokens).toContain("ਪਾਣੀ");
+
+    const hiTokens = tokenize("कटाई से पहले पानी");
+    expect(hiTokens).toContain("कटाई");
+    expect(hiTokens).toContain("पानी");
+  });
+
+  it("retrieves official guidance for Gurmukhi query", () => {
+    const res = searchChunks("ਵਾਢੀ ਤੋਂ ਪਹਿਲਾਂ ਪਾਣੀ ਕਦੋਂ ਬੰਦ ਕਰਨਾ ਹੈ?", mockChunks);
+    expect(res).not.toBeNull();
+    expect(res.answer).toContain("14 to 15 days");
+  });
 });
