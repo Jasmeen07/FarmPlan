@@ -2,7 +2,7 @@
  * web/src/ragClient.js
  * Client-Side Grounded RAG Retrieval Engine for FarmPlan
  * Enables zero-latency, $0 cost, offline-capable official PAU guidance retrieval
- * for ANY farmer question.
+ * for ANY farmer question in English, Hindi/Punjabi transliteration, or colloquial phrasing.
  */
 
 const STOP_WORDS = new Set([
@@ -20,25 +20,85 @@ const STOP_WORDS = new Set([
   "they've", "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't",
   "we", "we'd", "we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's",
   "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "won't",
-  "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"
+  "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",
+  "tell", "give", "kisan", "farmer", "crop", "rice", "paddy"
 ]);
 
 const SYNONYMS = {
-  harvest: ["combine", "stop", "irrigation", "termination", "days", "cut", "maturity"],
-  awd: ["alternate", "wetting", "drying", "tillering", "hairline", "cracks", "saving"],
-  saline: ["kallar", "sodic", "salt", "brackish", "capillary"],
-  dsr: ["direct", "seeded", "rice", "tar-wattar", "drill", "weed", "pendimethalin"],
-  zinc: ["khaira", "deficiency", "rusty", "bronze", "blotches", "sulphate"],
-  iron: ["chlorosis", "yellow", "white", "interveinal", "ferrous"],
-  fertilizer: ["urea", "dap", "nitrogen", "phosphorus", "superphosphate", "split"],
-  nursery: ["seedling", "carbendazim", "streptocycline", "treatment", "marla"],
-  weed: ["pendimethalin", "bispyribac", "pretilachlor", "butachlor", "swank", "motha"],
+  // Water
+  water: ["irrigation", "awd", "sinchai", "paani", "pani", "submergence", "flooding", "tubewell", "pumping", "schedule"],
+  irrigate: ["water", "irrigation", "awd", "sinchai", "paani", "submergence", "schedule", "tubewell"],
+  irrigation: ["water", "awd", "sinchai", "paani", "submergence", "schedule", "tubewell"],
+  paani: ["water", "irrigation", "awd", "sinchai", "submergence", "tubewell"],
+  pani: ["water", "irrigation", "awd", "sinchai", "submergence", "tubewell"],
+  sinchai: ["water", "irrigation", "awd", "submergence", "tubewell"],
+  awd: ["alternate", "wetting", "drying", "tillering", "hairline", "cracks", "saving", "tubewell"],
+  harvest: ["combine", "stop", "irrigation", "termination", "days", "cut", "maturity", "lodging"],
+  flowering: ["nissar", "panicle", "initiation", "moisture", "stress", "standing", "water"],
+
+  // Fertilizers
+  fertilizer: ["urea", "nitrogen", "dap", "khad", "single", "superphosphate", "phosphorus", "splits", "dose"],
+  fertilizers: ["urea", "nitrogen", "dap", "khad", "single", "superphosphate", "phosphorus", "splits", "dose"],
+  khad: ["urea", "fertilizer", "dap", "nitrogen", "phosphorus", "splits"],
+  urea: ["fertilizer", "nitrogen", "splits", "puddling", "110", "130", "panicle"],
+  dap: ["fertilizer", "phosphorus", "superphosphate", "27"],
+  zinc: ["khaira", "deficiency", "rusty", "bronze", "blotches", "sulphate", "25"],
+  iron: ["chlorosis", "yellow", "white", "interveinal", "ferrous", "dsr"],
+  yellow: ["iron", "zinc", "khaira", "chlorosis", "bacterial", "blight", "deficiency"],
+
+  // Weeds
+  weed: ["weeds", "herbicide", "pendimethalin", "bispyribac", "pretilachlor", "butachlor", "swank", "motha", "spray", "ghas"],
+  weeds: ["weed", "herbicide", "pendimethalin", "bispyribac", "pretilachlor", "butachlor", "swank", "motha", "spray", "ghas"],
+  ghas: ["weeds", "weed", "herbicide", "swank", "motha", "bispyribac"],
+  herbicide: ["weeds", "spray", "pendimethalin", "bispyribac", "pretilachlor", "butachlor"],
+  spray: ["herbicide", "fungicide", "insecticide", "dose", "chemical", "dawai"],
+  dawai: ["spray", "herbicide", "fungicide", "insecticide", "medicine"],
+
+  // Insects
+  insect: ["insects", "pest", "pests", "worm", "worms", "sundi", "keeda", "keede", "bph", "hopper", "folder", "borer", "caterpillar"],
+  insects: ["insect", "pest", "pests", "worm", "worms", "sundi", "keeda", "keede", "bph", "hopper", "folder", "borer", "caterpillar"],
+  pest: ["insect", "insects", "pests", "bph", "hopper", "leaf", "folder", "stem", "borer", "keeda"],
+  pests: ["insect", "insects", "pest", "bph", "hopper", "leaf", "folder", "stem", "borer", "keeda"],
+  worm: ["caterpillar", "stem", "borer", "leaf", "folder", "sundi", "larvae"],
+  worms: ["caterpillar", "stem", "borer", "leaf", "folder", "sundi", "larvae"],
+  sundi: ["caterpillar", "stem", "borer", "leaf", "folder", "larvae"],
+  keeda: ["insect", "pest", "bph", "stem", "borer", "leaf", "folder"],
+  keede: ["insect", "pest", "bph", "stem", "borer", "leaf", "folder"],
   hopper: ["bph", "brown", "plant", "hopper", "burn", "triflumezopyrim", "pymetrozine"],
-  folder: ["leaf", "caterpillar", "translucent", "flubendiamide"],
-  blast: ["spindle", "spots", "neck", "tricyclazole"],
-  blight: ["bacterial", "wavy", "margin", "sheath", "hexaconazole"],
-  stubble: ["straw", "burning", "happy", "seeder", "smart", "residue"],
-  date: ["zone", "june", "act", "preservation", "subsoil", "may"]
+  bph: ["brown", "plant", "hopper", "burn", "triflumezopyrim", "pymetrozine", "alleyways"],
+
+  // Diseases
+  disease: ["diseases", "blast", "blight", "sheath", "fungus", "bimari", "rog", "spots", "rot", "tricyclazole"],
+  diseases: ["disease", "blast", "blight", "sheath", "fungus", "bimari", "rog", "spots", "rot", "tricyclazole"],
+  bimari: ["disease", "blast", "blight", "sheath", "fungus", "tricyclazole"],
+  rog: ["disease", "blast", "blight", "sheath", "fungus", "tricyclazole"],
+  blast: ["spindle", "spots", "neck", "tricyclazole", "disease"],
+  blight: ["bacterial", "wavy", "margin", "sheath", "hexaconazole", "disease"],
+
+  // DSR & Varieties
+  dsr: ["direct", "seeded", "rice", "tar-wattar", "drill", "weed", "pendimethalin", "siddhi", "bijai"],
+  direct: ["dsr", "seeded", "rice", "tar-wattar", "drill"],
+  saline: ["kallar", "sodic", "salt", "brackish", "capillary", "khara"],
+  kallar: ["saline", "sodic", "salt", "brackish", "capillary"],
+  variety: ["varieties", "pr", "126", "131", "128", "pusa", "44", "duration", "yield", "beej"],
+  varieties: ["variety", "pr", "126", "131", "128", "pusa", "44", "duration", "yield", "beej"],
+  beej: ["seed", "variety", "certified", "rate", "nursery"],
+  seed: ["beej", "rate", "nursery", "marla", "certified", "treatment", "carbendazim"],
+  seeds: ["beej", "seed", "rate", "nursery", "marla", "certified", "treatment"],
+  nursery: ["seedling", "carbendazim", "streptocycline", "treatment", "marla", "paneeri"],
+  paneeri: ["nursery", "seedlings", "transplanting", "marla"],
+
+  // Economics
+  cost: ["costs", "expense", "tubewell", "pumping", "diesel", "labour", "savings", "kharcha"],
+  costs: ["cost", "expense", "tubewell", "pumping", "diesel", "labour", "savings", "kharcha"],
+  kharcha: ["cost", "diesel", "pumping", "labour", "savings"],
+  diesel: ["pumping", "tubewell", "cost", "irrigations", "savings"],
+  save: ["saving", "savings", "water", "pumping", "incentive", "subsidy", "bachat"],
+  savings: ["saving", "save", "water", "pumping", "incentive", "subsidy", "bachat"],
+  subsidy: ["incentive", "punjab", "government", "1500", "dsr", "acre"],
+  incentive: ["subsidy", "punjab", "government", "1500", "dsr", "acre"],
+  stubble: ["straw", "burning", "happy", "seeder", "smart", "residue", "parali"],
+  parali: ["stubble", "straw", "burning", "happy", "seeder", "smart"]
 };
 
 export function tokenize(text) {
@@ -51,7 +111,7 @@ export function tokenize(text) {
   return words;
 }
 
-export function searchChunks(query, chunks, minScore = 0.08) {
+export function searchChunks(query, chunks, minScore = 0.02) {
   if (!query || !chunks || chunks.length === 0) return null;
 
   const rawTokens = tokenize(query);
@@ -60,11 +120,8 @@ export function searchChunks(query, chunks, minScore = 0.08) {
   // Query Expansion via agricultural domain synonyms
   const queryTokens = new Set(rawTokens);
   for (const token of rawTokens) {
-    for (const [key, synList] of Object.entries(SYNONYMS)) {
-      if (token === key || synList.includes(token)) {
-        queryTokens.add(key);
-        synList.forEach((s) => queryTokens.add(s));
-      }
+    if (SYNONYMS[token]) {
+      SYNONYMS[token].forEach((s) => queryTokens.add(s));
     }
   }
 
@@ -81,14 +138,10 @@ export function searchChunks(query, chunks, minScore = 0.08) {
       tf[t] = (tf[t] || 0) + 1;
     }
 
-    let matchCount = 0;
     let score = 0;
-
     for (const qToken of queryTokens) {
       if (tf[qToken]) {
-        matchCount += 1;
-        // Frequency weighting with length normalization
-        score += (tf[qToken] * 1.5) / Math.sqrt(chunkTokens.length);
+        score += (tf[qToken] * 2.0) / Math.sqrt(chunkTokens.length);
       }
     }
 
@@ -96,7 +149,7 @@ export function searchChunks(query, chunks, minScore = 0.08) {
     const titleTokens = tokenize(chunk.title);
     for (const qToken of rawTokens) {
       if (titleTokens.includes(qToken)) {
-        score += 0.8;
+        score += 1.0;
       }
     }
 
@@ -106,22 +159,23 @@ export function searchChunks(query, chunks, minScore = 0.08) {
     }
   }
 
+  // If score is too low or query is completely non-agricultural
   if (highestScore < minScore || !bestChunk) {
     return null;
   }
 
-  // Extract sentences from bestChunk
+  // Extract the most informative sentences
   const sentences = bestChunk.text
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 5);
 
   let answerText = bestChunk.text;
-  if (sentences.length > 3) {
+  if (sentences.length > 2) {
     const scored = sentences.map((sentence, idx) => {
       const sTokens = new Set(tokenize(sentence));
       let overlap = 0;
-      for (const t of rawTokens) {
+      for (const t of queryTokens) {
         if (sTokens.has(t)) overlap += 2;
       }
       return { idx, sentence, overlap };
@@ -132,6 +186,8 @@ export function searchChunks(query, chunks, minScore = 0.08) {
       const selected = [top.sentence];
       if (top.idx + 1 < sentences.length) selected.push(sentences[top.idx + 1]);
       answerText = selected.join(" ");
+    } else {
+      answerText = sentences.slice(0, 2).join(" ");
     }
   }
 

@@ -45,7 +45,7 @@ def ask(req: AskRequest):
         raise HTTPException(status_code=400, detail="Empty question")
 
     # 1. Retrieve official passages
-    passages = retriever.retrieve(req.question, k=3, min_score=0.08)
+    passages = retriever.retrieve(req.question, k=3, min_score=0.02)
 
     if not passages:
         return {
