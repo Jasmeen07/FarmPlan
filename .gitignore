@@ -8,11 +8,20 @@ __pycache__/
 dist/
 build/
 
-# Environment secrets
+# Environment secrets and credentials
 .env
+.env.*
+!.env.example
+*.env
 *.local
+*.pem
+*.key
+*.cert
+*.pfx
+secrets/
+credentials/
 
-# Ignore specification markdown files per user instruction
+# Specification markdown files (avoid all other MDs per user instruction)
 FarmPlan_v2_Build_Spec.md
 FarmPlan_v2_Technical_Guide.md
 docs/*.md
